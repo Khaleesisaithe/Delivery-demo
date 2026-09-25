@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Brasa: iniciar MySQL",
+      "type": "shell",
+      "command": "docker compose up -d db",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Brasa: migrations locais",
+      "type": "shell",
+      "command": "pnpm db:push",
+      "problemMatcher": [],
+      "dependsOn": "Brasa: iniciar MySQL",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Brasa: popular demo",
+      "type": "shell",
+      "command": "pnpm db:seed",
+      "problemMatcher": [],
+      "dependsOn": "Brasa: migrations locais",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Brasa: rodar aplicação",
+      "type": "shell",
+      "command": "pnpm dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Brasa: testes",
+      "type": "shell",
+      "command": "pnpm test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Brasa: build produção",
+      "type": "shell",
+      "command": "pnpm build",
+      "problemMatcher": []
+    }
+  ]
+}

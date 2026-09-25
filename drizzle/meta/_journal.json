@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1790358125678,
+      "tag": "0000_skinny_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1790358253887,
+      "tag": "0001_noisy_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1790371887116,
+      "tag": "0002_slimy_rogue",
+      "breakpoints": true
+    }
+  ]
+}
