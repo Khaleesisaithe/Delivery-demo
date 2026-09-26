@@ -14,7 +14,7 @@ function databaseOptions(connectionString: string): PoolOptions {
     password: decodeURIComponent(uri.password),
     database: decodeURIComponent(uri.pathname.replace(/^\//, "")),
     waitForConnections: true,
-    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || "10"),
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || (process.env.VERCEL ? "3" : "10")),
     queueLimit: 100,
     connectTimeout: 10_000,
     timezone: "Z",
@@ -23,8 +23,11 @@ function databaseOptions(connectionString: string): PoolOptions {
   };
   if (process.env.DATABASE_SSL === "true") {
     const caFile = process.env.DATABASE_SSL_CA_FILE;
+    const caValue = process.env.DATABASE_SSL_CA;
+    if (caFile && caValue) throw new Error("Set only one of DATABASE_SSL_CA_FILE and DATABASE_SSL_CA.");
     options.ssl = {
       ...(caFile ? { ca: readFileSync(caFile, "utf8") } : {}),
+      ...(caValue ? { ca: caValue.replace(/\\n/g, "\n") } : {}),
       rejectUnauthorized: true,
       verifyIdentity: true,
       minVersion: "TLSv1.2",
@@ -38,7 +41,7 @@ export async function getDb() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) return null;
   try {
-    const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || "10");
+    const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || (process.env.VERCEL ? "3" : "10"));
     if (!Number.isInteger(connectionLimit) || connectionLimit < 1 || connectionLimit > 50) {
       throw new Error("DB_CONNECTION_LIMIT must be an integer from 1 to 50.");
     }

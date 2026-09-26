@@ -1,20 +1,9 @@
 import "dotenv/config";
-import express from "express";
-import helmet from "helmet";
-import { rateLimit } from "express-rate-limit";
 import { createServer } from "http";
 import net from "net";
-import { sql } from "drizzle-orm";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "../routers";
-import { closeDb, getDb } from "../db";
-import { createContext } from "./context";
-import { isLocalDevAuthEnabled } from "./localDevAuth";
+import { createApp } from "../app";
+import { closeDb } from "../db";
 import { serveStatic, setupVite } from "./vite";
-
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 12, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." } });
-const orderLimiter = rateLimit({ windowMs: 60 * 1000, limit: 8, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitos pedidos em sequência. Aguarde um instante." } });
-const trackingLimiter = rateLimit({ windowMs: 60 * 1000, limit: 45, standardHeaders: "draft-8", legacyHeaders: false });
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -29,56 +18,9 @@ async function findDevelopmentPort(startPort: number): Promise<number> {
   throw new Error(`No development port available starting from ${startPort}`);
 }
 
-function validateProductionEnvironment(): void {
-  if (process.env.NODE_ENV !== "production") return;
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required in production.");
-  if (process.env.DATABASE_SSL !== "true") throw new Error("DATABASE_SSL=true is required in production; database connections must use verified TLS.");
-  if (!process.env.APP_URL) throw new Error("APP_URL must be the public HTTPS origin in production.");
-  const url = new URL(process.env.APP_URL);
-  if (url.protocol !== "https:" || url.pathname !== "/" || url.search || url.hash) throw new Error("APP_URL must be an HTTPS origin without a path or query.");
-  if (isLocalDevAuthEnabled()) throw new Error("LOCAL_DEV_AUTH must be disabled in production.");
-  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? "0");
-  if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 5) throw new Error("TRUST_PROXY_HOPS must be an integer from 0 to 5.");
-}
-
 async function startServer(): Promise<void> {
-  validateProductionEnvironment();
-  const app = express();
+  const app = createApp();
   const server = createServer(app);
-  app.disable("x-powered-by");
-  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? "0"));
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        imgSrc: ["'self'", "data:", "https:"],
-        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-        connectSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        frameAncestors: ["'none'"],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-  }));
-  app.use(express.json({ limit: "1mb" }));
-  app.use(express.urlencoded({ limit: "64kb", extended: false }));
-
-  app.get("/healthz", async (_req, res) => {
-    const db = await getDb();
-    if (!db) { res.status(503).json({ ok: false, database: "unavailable" }); return; }
-    try { await db.execute(sql`select 1`); res.json({ ok: true, database: "connected" }); }
-    catch { res.status(503).json({ ok: false, database: "unavailable" }); }
-  });
-
-  app.use("/api/trpc/auth.login", authLimiter);
-  app.use("/api/trpc/delivery.orders.create", orderLimiter);
-  app.use("/api/trpc/delivery.orders.track", trackingLimiter);
-  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
-
   if (process.env.NODE_ENV === "development") await setupVite(app, server);
   else serveStatic(app);
 

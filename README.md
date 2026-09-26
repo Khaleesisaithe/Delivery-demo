@@ -108,6 +108,18 @@ pnpm start
 
 Não compartilhe backups, dados de pedidos ou credenciais entre clientes. Defina política própria para retenção e exclusão de dados pessoais e para resposta a incidentes.
 
+### Vercel
+
+O projeto inclui um entrypoint Express no padrão da Vercel (`index.ts`), `vercel.json`, fallback SPA para rotas diretas (`/acesso-loja`, `/pedido/:id`) e build Vite servido como assets estáticos pelo CDN. A API tRPC roda no mesmo Express como uma Vercel Function; o limite da função está configurado em 60 segundos.
+
+1. Importe o repositório privado `Khaleesisaithe/Delivery-demo` no time/conta corretos da Vercel (a integração GitHub precisa ter permissão sobre esse repositório). Use o projeto `delivery-demo` ou o projeto correspondente já existente, com a raiz na pasta do repositório.
+2. No projeto Vercel, configure `DATABASE_URL` com o MySQL **privado e dedicado a esta loja** e `DATABASE_SSL=true` em Production e Preview. Adicione `DATABASE_SSL_CA` (certificado PEM, se o provedor exigir CA própria) ou monte um arquivo e defina `DATABASE_SSL_CA_FILE`; use no máximo uma das opções. Nunca coloque segredos no Git ou em código `VITE_*`.
+3. Vercel injeta a URL da implantação; o app a usa se `APP_URL` não estiver definido. Se precisar fixar domínio, adicione a origem HTTPS canônica em `APP_URL`. Garanta que `LOCAL_DEV_AUTH` não seja ativado. Configure outros segredos da Cloud API do WhatsApp somente se for utilizar mensagens automáticas.
+4. Antes de liberar, inicialize o schema no banco dedicado a partir de um clone/ambiente autorizado (`pnpm db:setup`) e crie o proprietário num terminal interativo seguro (`pnpm owner:create`). Faça o bootstrap uma única vez; não coloque a senha do proprietário em variável de build ou em comentário.
+5. O dono do projeto deve confirmar que o provedor MySQL permite conexões TLS vindas da Vercel e restringir acessos de rede conforme os recursos do plano/provedor. Valide a publicação com `/healthz`, login da equipe, pedido, acompanhamento e uma operação de status. Um build “READY” não comprova que o banco ou o fluxo de pedidos está operacional.
+
+O primeiro deploy para Preview não deve receber credenciais reais de produção. Configure uma base Preview separada ou mantenha a publicação não operacional até conectar o banco apropriado. O limitador de tentativas atual guarda estado em memória do processo Express; em serverless ele não é um contador global entre instâncias — aplique proteção/WAF ou rate limit distribuído do provedor antes de depender dele como limite global contra abuso.
+
 ## Operação e desenvolvimento
 
 ```bash
