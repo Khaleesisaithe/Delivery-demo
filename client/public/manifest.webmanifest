@@ -1,13 +1,20 @@
 {
   "id": "/",
-  "name": "Brasa & Ponto | Delivery",
-  "short_name": "Brasa & Ponto",
-  "description": "Peça seu burger artesanal e acompanhe o pedido.",
+  "name": "Delivery | Cardápio e pedidos",
+  "short_name": "Delivery",
+  "description": "Consulte o cardápio, faça seu pedido e acompanhe a entrega.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#fff8f1",
   "theme_color": "#fff8f1",
-  "icons": [{ "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

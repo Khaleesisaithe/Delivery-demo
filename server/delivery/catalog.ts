@@ -4,14 +4,21 @@ import { z } from "zod";
 import { categories, productOptions, products, storeSettings } from "../../drizzle/schema";
 import { adminProcedure, requireDb } from "./shared";
 import { publicProcedure, router } from "../_core/trpc";
+import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone";
 
 const optionInput = z.object({ name: z.string().trim().min(1).max(120), priceCents: z.number().int().min(0).max(100000), isAvailable: z.boolean().default(true) });
 const productFields = z.object({
   categoryId: z.number().int().positive(), name: z.string().trim().min(2).max(160),
-  description: z.string().trim().max(2000).default(""), imageUrl: z.string().url().or(z.literal("")).default(""),
+  description: z.string().trim().max(2000).default(""), imageUrl: z.string().trim().max(1000).refine(isSafeImageReference, "Use uma imagem local ou URL HTTPS.").default(""),
   priceCents: z.number().int().min(1).max(500000), isAvailable: z.boolean().default(true),
   isFeatured: z.boolean().default(false), sortOrder: z.number().int().default(0), options: z.array(optionInput).max(20).default([]),
 });
+const paymentMethodValues = ["pix", "cash", "card_delivery", "card_pickup"] as const;
+function isSafeImageReference(value: string): boolean {
+  if (!value) return true;
+  if (/^\/(?!\/)[a-zA-Z0-9_./~-]+$/.test(value)) return true;
+  try { return new URL(value).protocol === "https:"; } catch { return false; }
+}
 
 export const catalogRouter = router({
   home: publicProcedure.query(async () => {
@@ -22,7 +29,12 @@ export const catalogRouter = router({
       db.select().from(products).where(eq(products.isAvailable, true)).orderBy(asc(products.categoryId), asc(products.sortOrder)),
       db.select().from(productOptions).where(eq(productOptions.isAvailable, true)),
     ]);
-    return { store: storeRows[0] ?? null, categories: categoryRows, products: productRows, options: optionRows };
+    let paymentMethods: typeof paymentMethodValues[number][] = ["pix", "cash", "card_delivery", "card_pickup"];
+    try {
+      const parsed = JSON.parse(storeRows[0]?.paymentMethods ?? "[]");
+      if (Array.isArray(parsed) && parsed.every(value => paymentMethodValues.includes(value))) paymentMethods = parsed;
+    } catch { /* keep template defaults */ }
+    return { store: storeRows[0] ?? null, paymentMethods, categories: categoryRows, products: productRows, options: optionRows };
   }),
   adminData: adminProcedure.query(async () => {
     const db = await requireDb();
@@ -32,7 +44,12 @@ export const catalogRouter = router({
       db.select().from(productOptions),
       db.select().from(storeSettings).limit(1),
     ]);
-    return { categories: categoryRows, products: productRows, options: optionRows, store: storeRows[0] ?? null };
+    let paymentMethods: typeof paymentMethodValues[number][] = ["pix", "cash", "card_delivery", "card_pickup"];
+    try {
+      const parsed = JSON.parse(storeRows[0]?.paymentMethods ?? "[]");
+      if (Array.isArray(parsed) && parsed.every(value => paymentMethodValues.includes(value))) paymentMethods = parsed;
+    } catch { /* keep template defaults */ }
+    return { categories: categoryRows, products: productRows, options: optionRows, store: storeRows[0] ?? null, paymentMethods };
   }),
   categoryCreate: adminProcedure.input(z.object({ name: z.string().trim().min(2).max(120) })).mutation(async ({ input }) => {
     const db = await requireDb();
@@ -86,14 +103,22 @@ export const catalogRouter = router({
     return { success: true };
   }),
   storeUpdate: adminProcedure.input(z.object({
-    name: z.string().trim().min(2).max(140), tagline: z.string().trim().max(240), phone: z.string().trim().min(8).max(24),
-    address: z.string().trim().max(240), averageDeliveryMinutes: z.number().int().min(5).max(240), deliveryFeeCents: z.number().int().min(0).max(50000),
+    name: z.string().trim().min(2).max(140), tagline: z.string().trim().max(240), phone: z.string().trim().max(32).refine(isSupportedBrazilPhone, "Informe um telefone brasileiro com DDD."),
+    address: z.string().trim().max(240), logoUrl: z.string().trim().max(1000).refine(isSafeImageReference, "Use uma imagem local ou URL HTTPS."),
+    bannerUrl: z.string().trim().max(1000).refine(isSafeImageReference, "Use uma imagem local ou URL HTTPS."),
+    brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/), timeZone: z.string().trim().min(1).max(64),
+    businessHours: z.string().trim().max(500), paymentMethods: z.array(z.enum(paymentMethodValues)).min(1).max(paymentMethodValues.length),
+    averageDeliveryMinutes: z.number().int().min(5).max(240), deliveryFeeCents: z.number().int().min(0).max(50000),
     minimumOrderCents: z.number().int().min(0).max(50000), isOpen: z.boolean(), closedMessage: z.string().trim().max(200),
   })).mutation(async ({ input }) => {
+    try { new Intl.DateTimeFormat("pt-BR", { timeZone: input.timeZone }).format(new Date()); }
+    catch { throw new TRPCError({ code: "BAD_REQUEST", message: "Fuso horário inválido." }); }
     const db = await requireDb();
     const [existing] = await db.select({ id: storeSettings.id }).from(storeSettings).limit(1);
-    if (existing) await db.update(storeSettings).set(input).where(eq(storeSettings.id, existing.id));
-    else await db.insert(storeSettings).values(input);
+    const { paymentMethods, ...settings } = input;
+    const values = { ...settings, phone: normalizeBrazilPhone(settings.phone), paymentMethods: JSON.stringify(paymentMethods) };
+    if (existing) await db.update(storeSettings).set(values).where(eq(storeSettings.id, existing.id));
+    else await db.insert(storeSettings).values(values);
     return { success: true };
   }),
 });

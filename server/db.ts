@@ -1,92 +1,60 @@
-import { eq } from "drizzle-orm";
+import { readFileSync } from "node:fs";
+import { createPool, type PoolOptions } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
-import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+function databaseOptions(connectionString: string): PoolOptions {
+  const uri = new URL(connectionString);
+  if (!['mysql:', 'mysql2:'].includes(uri.protocol)) throw new Error("DATABASE_URL must use the mysql:// scheme.");
+  const options: PoolOptions = {
+    host: uri.hostname,
+    port: Number(uri.port || 3306),
+    user: decodeURIComponent(uri.username),
+    password: decodeURIComponent(uri.password),
+    database: decodeURIComponent(uri.pathname.replace(/^\//, "")),
+    waitForConnections: true,
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || "10"),
+    queueLimit: 100,
+    connectTimeout: 10_000,
+    timezone: "Z",
+    charset: "utf8mb4",
+    multipleStatements: false,
+  };
+  if (process.env.DATABASE_SSL === "true") {
+    const caFile = process.env.DATABASE_SSL_CA_FILE;
+    options.ssl = {
+      ...(caFile ? { ca: readFileSync(caFile, "utf8") } : {}),
+      rejectUnauthorized: true,
+      verifyIdentity: true,
+      minVersion: "TLSv1.2",
+    };
+  }
+  return options;
+}
+
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
-  }
-  return _db;
-}
-
-export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
-
+  if (dbInstance) return dbInstance;
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return null;
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
+    const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || "10");
+    if (!Number.isInteger(connectionLimit) || connectionLimit < 1 || connectionLimit > 50) {
+      throw new Error("DB_CONNECTION_LIMIT must be an integer from 1 to 50.");
     }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    const client = createPool(databaseOptions(connectionString));
+    // pnpm can resolve mysql2's promise declarations through two peer paths;
+    // both are the same runtime Pool implementation, but TypeScript treats them as distinct.
+    dbInstance = drizzle(client as any, { mode: "default" });
+    return dbInstance;
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
+    console.error("[Database] Could not initialize the MySQL pool", error instanceof Error ? error.message : "unknown error");
+    return null;
   }
 }
 
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
+export async function closeDb(): Promise<void> {
+  if (!dbInstance) return;
+  await dbInstance.$client.end();
+  dbInstance = null;
 }
-
-// TODO: add feature queries here as your schema grows.

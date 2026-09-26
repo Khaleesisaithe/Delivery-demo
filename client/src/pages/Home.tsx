@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Bell, Check, Clock3, Flame, House, MapPin, Menu as MenuIcon, Minus, Plus, Search, Settings2, ShoppingBag, Store, Tag, Utensils, X } from "lucide-react";
 import { toast } from "sonner";
@@ -10,12 +10,12 @@ type CartLine = { key: string; productId: number; name: string; description: str
 type DeliveryType = "delivery" | "pickup";
 type PaymentMethod = "pix" | "cash" | "card_delivery" | "card_pickup";
 
-const HERO_IMAGE = "/assets/food/brasa-hero.jpg";
-const ORIGINAL_DEMO_IMAGE = "/assets/food/brasa-burger.jpg";
-const MENU_IMAGES = ["/assets/food/brasa-combo-1.jpg", "/assets/food/brasa-combo-2.jpg", "/assets/food/brasa-combo-3.jpg"];
-const AÇAÍ_IMAGE = "/assets/food/brasa-acai.jpg";
-const JUICE_IMAGE = "/assets/food/brasa-suco.jpg";
-const MARMITEX_IMAGE = "/assets/food/brasa-marmitex.jpg";
+const HERO_IMAGE = "/assets/food/hero.jpg";
+const ORIGINAL_DEMO_IMAGE = "/assets/food/burger.jpg";
+const MENU_IMAGES = ["/assets/food/combo-1.jpg", "/assets/food/combo-2.jpg", "/assets/food/combo-3.jpg"];
+const AÇAÍ_IMAGE = "/assets/food/acai-bowl.jpg";
+const JUICE_IMAGE = "/assets/food/natural-juice.jpg";
+const MARMITEX_IMAGE = "/assets/food/marmitex.jpg";
 function productImage(product: { name: string; imageUrl: string | null }) {
   if (product.imageUrl && product.imageUrl !== ORIGINAL_DEMO_IMAGE) return product.imageUrl;
   const name = product.name.toLocaleLowerCase("pt-BR");
@@ -28,10 +28,23 @@ function productImage(product: { name: string; imageUrl: string | null }) {
   return MENU_IMAGES[2];
 }
 const categoryEmoji: Record<string, string> = { Hambúrgueres: "🍔", Combos: "🍟", Porções: "🥔", Bebidas: "🥤", Sobremesas: "🍰", "Açaí": "🫐", "Sucos naturais": "🍊", Marmitex: "🍱" };
-const emptyAddress = { postalCode: "", street: "", streetNumber: "", complement: "", neighborhood: "", city: "São Paulo", reference: "" };
+const emptyAddress = { postalCode: "", street: "", streetNumber: "", complement: "", neighborhood: "", city: "", reference: "" };
 
 export default function Home() {
   const catalog = trpc.delivery.catalog.home.useQuery(undefined, { refetchInterval: 30_000 });
+  const data = catalog.data;
+  const store = data?.store;
+  const products = data?.products ?? [];
+  useEffect(() => {
+    if (!store || typeof document === "undefined") return;
+    document.title = `${store.name} | Delivery`;
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const socialTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    const socialDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    if (description) description.content = `${store.name}. ${store.tagline || "Peça online e acompanhe seu pedido."}`;
+    if (socialTitle) socialTitle.content = `${store.name} | Delivery`;
+    if (socialDescription) socialDescription.content = store.tagline || "Peça online e acompanhe seu pedido.";
+  }, [store]);
   const orderMutation = trpc.delivery.orders.create.useMutation();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
@@ -40,13 +53,15 @@ export default function Home() {
   const [productNote, setProductNote] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [cart, setCart] = useState<CartLine[]>(() => {
-    try { return JSON.parse(localStorage.getItem("brasa-cart") || "[]") as CartLine[]; } catch { return []; }
+    try { return JSON.parse(localStorage.getItem("delivery-cart") || "[]") as CartLine[]; } catch { return []; }
   });
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<{ publicId: string; orderNumber: string; totalCents: number; trackingUrl: string; whatsappUrl: string } | null>(null);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const allowedPaymentMethods = useMemo(() => (data?.paymentMethods ?? []).filter(method => deliveryType === "delivery" ? method !== "card_pickup" : method !== "card_delivery"), [data?.paymentMethods, deliveryType]);
+  useEffect(() => { if (allowedPaymentMethods.length && !allowedPaymentMethods.includes(paymentMethod)) setPaymentMethod(allowedPaymentMethods[0]); }, [allowedPaymentMethods, paymentMethod]);
   const [changeFor, setChangeFor] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -56,11 +71,8 @@ export default function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
 
-  useEffect(() => { localStorage.setItem("brasa-cart", JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem("delivery-cart", JSON.stringify(cart)); }, [cart]);
 
-  const data = catalog.data;
-  const store = data?.store;
-  const products = data?.products ?? [];
   const subtotal = useMemo(() => calculateSubtotal(cart.map(line => ({ unitPriceCents: line.priceCents, quantity: line.quantity, options: line.options }))), [cart]);
   const deliveryFee = deliveryType === "delivery" ? (store?.deliveryFeeCents ?? 700) : 0;
   const total = calculateTotal(subtotal, deliveryFee);
@@ -119,11 +131,12 @@ export default function Home() {
 
   if (catalog.isLoading) return <div className="loading-shell"><span className="loader-mark"><Flame size={24} /></span><span>Acendendo a brasa…</span></div>;
   if (catalog.error || !data) return <main className="load-error"><Flame size={28} /><h1>Estamos preparando a casa.</h1><p>Não foi possível carregar o cardápio agora.</p><button onClick={() => catalog.refetch()}>Tentar novamente</button></main>;
+  if (!store) return <main className="load-error"><Store size={30} /><h1>Esta loja está sendo configurada.</h1><p>Volte em alguns instantes para conhecer o cardápio.</p></main>;
 
-  return <div className="storefront app-storefront" id="inicio">
+  return <div className="storefront app-storefront" id="inicio" style={{ "--bp-fire": store.brandColor } as CSSProperties}>
     <header className="app-topbar">
       <button className="header-icon-button menu-trigger" onClick={() => document.getElementById("cardapio")?.scrollIntoView({ behavior: "smooth" })} aria-label="Ir para o cardápio"><MenuIcon size={21} /></button>
-      <a className="app-brand" href="/" aria-label="Brasa & Ponto, início"><span className="brand-mark"><Flame size={20} fill="currentColor" /></span><span><small>Olá, vizinho! 👋</small><b>{store?.name || "Brasa & Ponto"}</b></span></a>
+      <a className="app-brand" href="/" aria-label={`${store.name}, início`}><span className="brand-mark">{store.logoUrl ? <img className="store-logo" src={store.logoUrl} alt="" /> : <Flame size={20} fill="currentColor" />}</span><span><small>{store.tagline || "Delivery da casa"}</small><b>{store.name}</b></span></a>
       <div className={`open-pill app-open-pill ${storeOpen ? "is-open" : "is-closed"}`}><i />{storeOpen ? "Aberto" : "Fechado"}</div>
       <Link href="/pedido" className="header-icon-button notification-trigger" aria-label="Acompanhar pedido"><Bell size={20} /></Link>
       <button className="header-icon-button bag-trigger" onClick={() => setCartOpen(true)} aria-label={`Abrir sacola, ${itemCount} itens`}><ShoppingBag size={20} />{itemCount > 0 && <b className="header-count">{itemCount}</b>}</button>
@@ -135,8 +148,8 @@ export default function Home() {
 
     <main>
       <section className="hero-wrap app-hero">
-        <div className="hero-art"><img src={HERO_IMAGE} alt="Burger artesanal com batatas douradas" /><div className="hero-photo-shade" /></div>
-        <div className="hero-copy"><span className="limited-label">FEITO AGORA · EDIÇÃO DA CASA</span><h1>Feito na brasa.<br /><em>Chega quentinho.</em></h1><p>{store?.tagline || "Burger de verdade, do nosso fogo para a sua casa."}</p><a href="#cardapio" className="hero-cta">Pedir agora <span className="round-arrow"><ArrowRight size={16} /></span></a></div>
+        <div className="hero-art"><img src={store.bannerUrl || HERO_IMAGE} alt={`${store.name} — imagem de destaque`} /><div className="hero-photo-shade" /></div>
+        <div className="hero-copy"><span className="limited-label">FEITO AGORA · EDIÇÃO DA CASA</span><h1>Feito na brasa.<br /><em>Chega quentinho.</em></h1><p>{store.tagline}</p><a href="#cardapio" className="hero-cta">Pedir agora <span className="round-arrow"><ArrowRight size={16} /></span></a></div>
         <div className="hero-dots" aria-hidden="true"><i className="active" /><i /><i /></div>
       </section>
 
@@ -176,22 +189,22 @@ export default function Home() {
         })}</div>
         {!filteredProducts.length && <div className="empty-results"><span>🍽️</span><h3>Não achamos esse sabor.</h3><p>Tente outro nome ou escolha uma categoria.</p><button onClick={() => { setSearch(""); setActiveCategory(null); }}>Limpar busca</button></div>}
       </section>
-      <section className="store-footer"><div><span className="brand-mark"><Flame size={18} fill="currentColor" /></span><b>{store?.name || "Brasa & Ponto"}</b></div><p>{store?.businessHours || "Ter–Dom · 18h às 23h"}</p><p>Feito com fogo e carinho em São Paulo.</p><span>© {new Date().getFullYear()} {store?.name || "Brasa & Ponto"}</span></section>
+      <section className="store-footer"><div><span className="brand-mark">{store.logoUrl ? <img className="store-logo" src={store.logoUrl} alt="" /> : <Flame size={18} fill="currentColor" />}</span><b>{store.name}</b></div><p>{store.businessHours || "Consulte os horários da loja."}</p>{store.address && <p>{store.address}</p>}{store.phone && <p><a href={`https://wa.me/${store.phone.replace(/\D/g, "")}`}>WhatsApp da loja</a></p>}<span>© {new Date().getFullYear()} {store.name}</span></section>
     </main>
 
     <nav className={`bottom-nav ${itemCount > 0 && !cartOpen && !checkoutOpen ? "cart-visible" : ""}`} aria-label="Navegação principal"><a href="#inicio" className={activeTab === "home" ? "bottom-tab active" : "bottom-tab"} onClick={() => setActiveTab("home")}><House size={19} /><small>Início</small></a><a href="#cardapio" className={activeTab === "menu" ? "bottom-tab active" : "bottom-tab"} onClick={() => setActiveTab("menu")}><Utensils size={19} /><small>Cardápio</small></a><Link href="/pedido" className="bottom-tab order-tab"><span><ShoppingBag size={19} /></span><small>Pedidos</small></Link><button className="bottom-tab" onClick={() => { const combo = data.categories.find(category => category.name === "Combos"); setActiveCategory(combo?.id ?? null); setActiveTab("offers"); document.getElementById("menu-completo")?.scrollIntoView({ behavior: "smooth" }); }}><Tag size={19} /><small>Ofertas</small></button></nav>
     {itemCount > 0 && !cartOpen && !checkoutOpen && !createdOrder && <button className="cart-bar" onClick={() => setCartOpen(true)}><span className="cart-bar-icon"><ShoppingBag size={19} /><b>{itemCount}</b></span><span>Ver sacola</span><strong>{formatBRL(subtotal)}</strong><ArrowRight size={18} /></button>}
     {cartOpen && <div className="overlay" onClick={() => setCartOpen(false)}><aside className="side-panel" onClick={event => event.stopPropagation()}><div className="panel-heading"><div><span className="eyebrow">SEU PEDIDO</span><h2>Sua sacola <span>({itemCount})</span></h2></div><button className="icon-close" onClick={() => setCartOpen(false)} aria-label="Fechar"><X /></button></div>
-      {!cart.length ? <div className="empty-cart"><ShoppingBag size={35} /><h3>Sua sacola está vazia</h3><p>Escolha alguma delícia do cardápio.</p><button onClick={() => setCartOpen(false)}>Voltar ao cardápio</button></div> : <><div className="cart-items">{cart.map(line => <div className="cart-line" key={line.key}><div className="cart-thumb">{categoryEmoji[data.categories.find(c => c.id === products.find(p => p.id === line.productId)?.categoryId)?.name || ""] || "🍽️"}</div><div className="cart-line-main"><b>{line.name}</b>{line.options.length > 0 && <small>+ {line.options.map(option => option.name).join(", ")}</small>}{line.note && <small>Obs.: {line.note}</small>}<strong>{formatBRL((line.priceCents + line.options.reduce((sum, option) => sum + option.priceCents, 0)) * line.quantity)}</strong><div className="stepper"><button onClick={() => changeCartQuantity(line.key, -1)} aria-label="Diminuir"><Minus size={14} /></button><b>{line.quantity}</b><button onClick={() => changeCartQuantity(line.key, 1)} aria-label="Aumentar"><Plus size={14} /></button></div></div><button className="remove-line" onClick={() => changeCartQuantity(line.key, -line.quantity)} aria-label="Remover item"><X size={15} /></button></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><b>{formatBRL(subtotal)}</b></div><div><span>Entrega</span><b>{deliveryType === "pickup" ? "Grátis" : formatBRL(store?.deliveryFeeCents ?? 700)}</b></div>{cartError && <p className="form-error">{cartError}</p>}<div className="total-row"><span>Total estimado</span><strong>{formatBRL(total)}</strong></div><button className="primary-button" onClick={beginCheckout}>Ir para o checkout <ArrowRight size={17} /></button><p className="secure-note">Seu pedido fica registrado antes de abrir o WhatsApp.</p></div></>}
+      {!cart.length ? <div className="empty-cart"><ShoppingBag size={35} /><h3>Sua sacola está vazia</h3><p>Escolha alguma delícia do cardápio.</p><button onClick={() => setCartOpen(false)}>Voltar ao cardápio</button></div> : <><div className="cart-items">{cart.map(line => <div className="cart-line" key={line.key}><div className="cart-thumb">{categoryEmoji[data.categories.find(c => c.id === products.find(p => p.id === line.productId)?.categoryId)?.name || ""] || "🍽️"}</div><div className="cart-line-main"><b>{line.name}</b>{line.options.length > 0 && <small>+ {line.options.map(option => option.name).join(", ")}</small>}{line.note && <small>Obs.: {line.note}</small>}<strong>{formatBRL((line.priceCents + line.options.reduce((sum, option) => sum + option.priceCents, 0)) * line.quantity)}</strong><div className="stepper"><button onClick={() => changeCartQuantity(line.key, -1)} aria-label="Diminuir"><Minus size={14} /></button><b>{line.quantity}</b><button onClick={() => changeCartQuantity(line.key, 1)} aria-label="Aumentar"><Plus size={14} /></button></div></div><button className="remove-line" onClick={() => changeCartQuantity(line.key, -line.quantity)} aria-label="Remover item"><X size={15} /></button></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><b>{formatBRL(subtotal)}</b></div><div><span>Entrega</span><b>{deliveryType === "pickup" ? "Grátis" : formatBRL(store?.deliveryFeeCents ?? 0)}</b></div>{cartError && <p className="form-error">{cartError}</p>}<div className="total-row"><span>Total estimado</span><strong>{formatBRL(total)}</strong></div><button className="primary-button" onClick={beginCheckout}>Ir para o checkout <ArrowRight size={17} /></button><p className="secure-note">Seu pedido fica registrado antes de abrir o WhatsApp.</p></div></>}
     </aside></div>}
 
     {selected && <div className="overlay modal-overlay" onClick={() => setSelectedProduct(null)}><section className="product-modal" onClick={event => event.stopPropagation()}><button className="icon-close modal-close" onClick={() => setSelectedProduct(null)} aria-label="Fechar"><X /></button><div className="modal-photo"><img src={productImage(selected)} alt={selected.name} /></div><div className="modal-body"><span className="eyebrow">{data.categories.find(category => category.id === selected.categoryId)?.name}</span><h2>{selected.name}</h2><p>{selected.description}</p><strong className="modal-price">{formatBRL(selected.priceCents)}</strong>{data.options.filter(option => option.productId === selected.id).length > 0 && <div className="addon-list"><div className="addon-heading"><b>Deixe do seu jeito</b><small>Adicionais opcionais</small></div>{data.options.filter(option => option.productId === selected.id).map(option => <label key={option.id} className="addon-row"><input type="checkbox" checked={selectedOptions.some(item => item.id === option.id)} onChange={event => setSelectedOptions(current => event.target.checked ? [...current, option] : current.filter(item => item.id !== option.id))} /><span>{option.name}</span><b>+ {formatBRL(option.priceCents)}</b></label>)}</div>}<label className="note-label">Alguma observação?<textarea value={productNote} maxLength={500} onChange={event => setProductNote(event.target.value)} placeholder="Ex.: sem cebola, ponto da carne…" /></label><div className="modal-action"><div className="stepper large"><button onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus size={15} /></button><b>{quantity}</b><button onClick={() => setQuantity(quantity + 1)}><Plus size={15} /></button></div><button className="primary-button" onClick={addProduct}>Adicionar · {formatBRL((selected.priceCents + selectedOptions.reduce((sum, option) => sum + option.priceCents, 0)) * quantity)}</button></div></div></section></div>}
 
     {checkoutOpen && <div className="overlay modal-overlay" onClick={() => setCheckoutOpen(false)}><section className="checkout-modal" onClick={event => event.stopPropagation()}><div className="panel-heading"><div><span className="eyebrow">SÓ MAIS UM PASSO</span><h2>Finalizar pedido</h2></div><button className="icon-close" onClick={() => setCheckoutOpen(false)} aria-label="Fechar"><X /></button></div><form onSubmit={submitOrder}>
       <div className="checkout-scroll"><section className="form-section"><h3>Seus dados</h3><div className="field-grid"><label>Nome completo<input required minLength={2} value={customerName} onChange={event => setCustomerName(event.target.value)} placeholder="Como podemos te chamar?" /></label><label>WhatsApp<input required minLength={8} value={phone} onChange={event => setPhone(event.target.value)} placeholder="(11) 99999-9999" inputMode="tel" /></label></div></section>
-      <section className="form-section"><h3>Como prefere receber?</h3><div className="choice-grid"><button type="button" className={deliveryType === "delivery" ? "choice-card selected" : "choice-card"} onClick={() => setDeliveryType("delivery")}><MapPin size={18} /><span><b>Entrega</b><small>{formatBRL(store?.deliveryFeeCents ?? 700)}</small></span>{deliveryType === "delivery" && <Check size={17} />}</button><button type="button" className={deliveryType === "pickup" ? "choice-card selected" : "choice-card"} onClick={() => setDeliveryType("pickup")}><Store size={18} /><span><b>Retirada</b><small>Sem taxa</small></span>{deliveryType === "pickup" && <Check size={17} />}</button></div>
+      <section className="form-section"><h3>Como prefere receber?</h3><div className="choice-grid"><button type="button" className={deliveryType === "delivery" ? "choice-card selected" : "choice-card"} onClick={() => setDeliveryType("delivery")}><MapPin size={18} /><span><b>Entrega</b><small>{formatBRL(store?.deliveryFeeCents ?? 0)}</small></span>{deliveryType === "delivery" && <Check size={17} />}</button><button type="button" className={deliveryType === "pickup" ? "choice-card selected" : "choice-card"} onClick={() => setDeliveryType("pickup")}><Store size={18} /><span><b>Retirada</b><small>Sem taxa</small></span>{deliveryType === "pickup" && <Check size={17} />}</button></div>
       {deliveryType === "delivery" && <div className="field-grid address-grid"><label className="field-wide">CEP<input value={address.postalCode} onChange={event => setAddress({ ...address, postalCode: event.target.value })} placeholder="00000-000" inputMode="numeric" /></label><label>Rua<input required value={address.street} onChange={event => setAddress({ ...address, street: event.target.value })} placeholder="Nome da rua" /></label><label>Número<input required value={address.streetNumber} onChange={event => setAddress({ ...address, streetNumber: event.target.value })} placeholder="123" /></label><label>Complemento<input value={address.complement} onChange={event => setAddress({ ...address, complement: event.target.value })} placeholder="Apto, casa…" /></label><label>Bairro<input required value={address.neighborhood} onChange={event => setAddress({ ...address, neighborhood: event.target.value })} placeholder="Seu bairro" /></label><label>Cidade<input required value={address.city} onChange={event => setAddress({ ...address, city: event.target.value })} placeholder="Cidade" /></label><label className="field-wide">Ponto de referência<input value={address.reference} onChange={event => setAddress({ ...address, reference: event.target.value })} placeholder="Próximo a…" /></label></div>}
-      </section><section className="form-section"><h3>Forma de pagamento</h3><div className="payment-options">{([{ value: "pix", label: "Pix", icon: "◈" }, { value: "cash", label: "Dinheiro", icon: "R$" }, ...(deliveryType === "delivery" ? [{ value: "card_delivery", label: "Cartão na entrega", icon: "▣" }] : [{ value: "card_pickup", label: "Cartão na retirada", icon: "▣" }])] as { value: PaymentMethod; label: string; icon: string }[]).map(option => <label key={option.value} className={paymentMethod === option.value ? "payment-choice selected" : "payment-choice"}><input type="radio" name="payment" checked={paymentMethod === option.value} onChange={() => setPaymentMethod(option.value)} /><span>{option.icon}</span>{option.label}</label>)}</div>{paymentMethod === "cash" && <label className="cash-change">Precisa de troco? <select value={changeFor ? "yes" : "no"} onChange={event => setChangeFor(event.target.value === "yes" ? "" : "")}><option value="no">Não</option><option value="yes">Sim</option></select><input className="change-input" value={changeFor} onChange={event => setChangeFor(event.target.value)} placeholder="Troco para quanto? (R$)" inputMode="decimal" /></label>}</section>
+      </section><section className="form-section"><h3>Forma de pagamento</h3><div className="payment-options">{([{ value: "pix", label: "Pix", icon: "◈" }, { value: "cash", label: "Dinheiro", icon: "R$" }, { value: "card_delivery", label: "Cartão na entrega", icon: "▣" }, { value: "card_pickup", label: "Cartão na retirada", icon: "▣" }] as { value: PaymentMethod; label: string; icon: string }[]).filter(option => data.paymentMethods.includes(option.value) && (deliveryType === "delivery" ? option.value !== "card_pickup" : option.value !== "card_delivery")).map(option => <label key={option.value} className={paymentMethod === option.value ? "payment-choice selected" : "payment-choice"}><input type="radio" name="payment" checked={paymentMethod === option.value} onChange={() => setPaymentMethod(option.value)} /><span>{option.icon}</span>{option.label}</label>)}</div>{paymentMethod === "cash" && <label className="cash-change">Troco para quanto? (opcional)<input className="change-input" value={changeFor} onChange={event => setChangeFor(event.target.value)} placeholder="Ex.: 50,00" inputMode="decimal" /></label>}</section>
       <section className="form-section"><label className="note-label">Observações do pedido<textarea value={customerNote} maxLength={500} onChange={event => setCustomerNote(event.target.value)} placeholder="Alguma instrução para a loja?" /></label></section></div>
       <div className="checkout-footer"><div><span>Total do pedido</span><b>{formatBRL(total)}</b></div><button type="submit" className="primary-button" disabled={orderMutation.isPending}>{orderMutation.isPending ? "Registrando pedido…" : "Confirmar pedido"}<ArrowRight size={17} /></button><p>O pedido será salvo no sistema antes de abrir a conversa no WhatsApp.</p></div>
     </form></section></div>}

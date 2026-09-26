@@ -26,6 +26,7 @@ export async function notifyOrderStatus(orderNumber: string, phone: string, stat
   const response = await fetch(`https://graph.facebook.com/v23.0/${phoneNumberId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(8_000),
     body: JSON.stringify({
       messaging_product: "whatsapp",
       to: recipient,
@@ -36,7 +37,11 @@ export async function notifyOrderStatus(orderNumber: string, phone: string, stat
         components: [{ type: "body", parameters: [{ type: "text", text: `#${orderNumber}` }, { type: "text", text: statusCopy[status] }] }],
       },
     }),
+  }).catch(error => {
+    console.error("[WhatsAppService] Status notification request timed out or failed", error instanceof Error ? error.name : "unknown");
+    return null;
   });
+  if (!response) return { delivered: false, reason: "provider_error" as const };
   if (!response.ok) {
     const safeDetails = await response.text().catch(() => "");
     console.error("[WhatsAppService] Status notification failed", response.status, safeDetails.slice(0, 300));

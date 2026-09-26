@@ -22,6 +22,20 @@
       "when": 1790371887116,
       "tag": "0002_slimy_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1790379449364,
+      "tag": "0003_milky_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1790380392791,
+      "tag": "0004_rainy_scourge",
+      "breakpoints": true
     }
   ]
 }

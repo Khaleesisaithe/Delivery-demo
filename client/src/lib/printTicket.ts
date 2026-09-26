@@ -26,7 +26,7 @@ type TicketItem = {
 const paymentLabels: Record<string, string> = { pix: "Pix", cash: "Dinheiro", card_delivery: "Cartão na entrega", card_pickup: "Cartão na retirada" };
 const escapeHtml = (value: string | number) => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 
-export function buildServiceTicketHtml(order: TicketOrder, customer: TicketCustomer, items: TicketItem[]) {
+export function buildServiceTicketHtml(order: TicketOrder, customer: TicketCustomer, items: TicketItem[], storeName = "Sua loja") {
   const itemsHtml = items.map(item => {
     const lineTotal = (item.unitPriceCents + item.options.reduce((sum, option) => sum + option.priceCents, 0)) * item.quantity;
     const optionsHtml = item.options.length ? `<div class="st-sub">+ ${item.options.map(option => escapeHtml(option.optionName)).join(", ")}</div>` : "";
@@ -39,7 +39,7 @@ export function buildServiceTicketHtml(order: TicketOrder, customer: TicketCusto
   const customerNote = order.customerNote ? `<div><b>Obs. do cliente:</b> ${escapeHtml(order.customerNote)}</div>` : "";
 
   return `
-    <div style="text-align:center;margin-bottom:6px"><b style="font-size:15px">BRASA &amp; PONTO</b><br><span style="font-size:9.5px">Nota de serviço — não é documento fiscal</span></div>
+    <div style="text-align:center;margin-bottom:6px"><b style="font-size:15px">${escapeHtml(storeName)}</b><br><span style="font-size:9.5px">Nota de serviço — não é documento fiscal</span></div>
     <hr>
     <div>Pedido: <b>${escapeHtml(order.orderNumber ?? "")}</b></div>
     <div>${escapeHtml(new Date(order.createdAt).toLocaleString("pt-BR"))}</div>
@@ -61,9 +61,9 @@ export function buildServiceTicketHtml(order: TicketOrder, customer: TicketCusto
   `;
 }
 
-export function printServiceTicket(order: TicketOrder, customer: TicketCustomer, items: TicketItem[]) {
+export function printServiceTicket(order: TicketOrder, customer: TicketCustomer, items: TicketItem[], storeName = "Sua loja") {
   const area = document.getElementById("service-ticket");
   if (!area) return;
-  area.innerHTML = buildServiceTicketHtml(order, customer, items);
+  area.innerHTML = buildServiceTicketHtml(order, customer, items, storeName);
   window.print();
 }

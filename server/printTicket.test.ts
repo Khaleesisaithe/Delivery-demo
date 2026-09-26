@@ -30,6 +30,12 @@ describe("service ticket", () => {
     expect(html).toMatch(/não é documento fiscal/i);
   });
 
+  it("renders the configured store name safely in the receipt header", () => {
+    const html = buildServiceTicketHtml(order, customer, items, "Lanchonete da Família & Filhos");
+    expect(html).toContain("Lanchonete da Família &amp; Filhos");
+    expect(html).not.toContain("BRASA &amp; PONTO");
+  });
+
   it("escapes customer-controlled content instead of injecting markup", () => {
     const html = buildServiceTicketHtml({ ...order, customerNote: "<img src=x onerror=alert(1)> & 'ok' \"yes\"" }, { name: "<script>alert(1)</script>", phone: "<b>999</b>" }, [{ ...items[0]!, productName: "<svg onload=alert(1)>", note: "<b>bad</b>", options: [{ optionName: "<img src=x>", priceCents: 0 }] }]);
     expect(html).not.toContain("<script>alert(1)</script>");

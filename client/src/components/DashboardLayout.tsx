@@ -19,16 +19,16 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Settings2, Utensils, ClipboardList, Users } from "lucide-react";
+import { CircleDollarSign, LayoutDashboard, LogOut, PanelLeft, Settings2, Utensils, ClipboardList, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: ClipboardList, label: "Pedidos", path: "/admin" },
+  { icon: CircleDollarSign, label: "Financeiro", path: "/admin/financeiro" },
   { icon: Utensils, label: "Cardápio", path: "/admin/cardapio" },
   { icon: Settings2, label: "Minha loja", path: "/admin/loja" },
   { icon: Users, label: "Equipe", path: "/admin/equipe" },
@@ -70,12 +70,8 @@ export default function DashboardLayout({
               Entre com sua conta para abrir a área da loja.
             </p>
           </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Entrar
+          <Button asChild size="lg" className="w-full shadow-lg hover:shadow-xl transition-all">
+            <Link href="/acesso-loja">Entrar com e-mail e senha</Link>
           </Button>
         </div>
       </div>

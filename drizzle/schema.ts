@@ -1,16 +1,30 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  emailNormalized: varchar("emailNormalized", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  passwordResetRequired: boolean("passwordResetRequired").default(false).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "staff"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
+
+export const authSessions = mysqlTable("auth_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("auth_sessions_user_id_idx").on(table.userId), index("auth_sessions_expires_at_idx").on(table.expiresAt)]);
 
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
@@ -74,9 +88,10 @@ export const orders = mysqlTable("orders", {
   reference: varchar("reference", { length: 200 }),
   customerNote: varchar("customerNote", { length: 500 }),
   internalNote: varchar("internalNote", { length: 500 }),
+  deliveredAt: timestamp("deliveredAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, table => [index("orders_status_created_idx").on(table.status, table.createdAt), index("orders_created_at_idx").on(table.createdAt)]);
 
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
@@ -102,21 +117,23 @@ export const orderStatusHistory = mysqlTable("order_status_history", {
   note: varchar("note", { length: 240 }),
   changedBy: varchar("changedBy", { length: 160 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, table => [index("order_status_history_order_created_idx").on(table.orderId, table.createdAt)]);
 
 export const storeSettings = mysqlTable("store_settings", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 140 }).default("Brasa & Ponto").notNull(),
-  tagline: varchar("tagline", { length: 240 }).default("Burger de verdade, do nosso fogo pra sua casa.").notNull(),
+  name: varchar("name", { length: 140 }).default("Sua loja").notNull(),
+  tagline: varchar("tagline", { length: 240 }).default("Feito com carinho, do nosso balcão pra sua casa.").notNull(),
   logoUrl: text("logoUrl"),
   bannerUrl: text("bannerUrl"),
-  phone: varchar("phone", { length: 24 }).default("5511999999999").notNull(),
-  address: varchar("address", { length: 240 }).default("Rua dos Pinheiros, 245 · São Paulo, SP").notNull(),
+  brandColor: varchar("brandColor", { length: 7 }).default("#C84B2F").notNull(),
+  phone: varchar("phone", { length: 24 }).default("").notNull(),
+  address: varchar("address", { length: 240 }).default("").notNull(),
   businessHours: text("businessHours"),
   averageDeliveryMinutes: int("averageDeliveryMinutes").default(35).notNull(),
-  deliveryFeeCents: int("deliveryFeeCents").default(700).notNull(),
-  minimumOrderCents: int("minimumOrderCents").default(2000).notNull(),
-  isOpen: boolean("isOpen").default(true).notNull(),
+  timeZone: varchar("timeZone", { length: 64 }).default("America/Sao_Paulo").notNull(),
+  deliveryFeeCents: int("deliveryFeeCents").default(0).notNull(),
+  minimumOrderCents: int("minimumOrderCents").default(0).notNull(),
+  isOpen: boolean("isOpen").default(false).notNull(),
   closedMessage: varchar("closedMessage", { length: 200 }).default("Voltamos às 18h.").notNull(),
   whatsappMessage: text("whatsappMessage"),
   paymentMethods: text("paymentMethods"),

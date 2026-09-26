@@ -1,8 +1,8 @@
 {
-  "name": "delivery-mobile",
+  "name": "delivery-demo-white-label",
   "version": "1.0.0",
   "type": "module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -10,10 +10,14 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "db:seed": "tsx server/seed.ts && tsx server/seed-expanded-menu.ts",
-    "db:seed:expanded": "tsx server/seed-expanded-menu.ts",
-    "dev:check": "pnpm check && pnpm test"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:setup": "drizzle-kit migrate && tsx server/seed.ts",
+    "db:seed": "tsx server/seed.ts",
+    "db:seed:demo": "tsx server/seed.ts --demo",
+    "owner:create": "tsx server/admin/createOwner.ts",
+    "dev:check": "pnpm check && pnpm test",
+    "db:seed:demo-orders": "tsx server/seed.ts --demo --sample-orders"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -79,7 +83,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
@@ -104,5 +110,6 @@
     "vite": "^7.1.7",
     "vitest": "^2.1.4"
   },
-  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
+  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+  "private": true
 }

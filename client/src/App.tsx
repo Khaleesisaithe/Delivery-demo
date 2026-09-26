@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import TrackOrder from "@/pages/TrackOrder";
 import Admin from "@/pages/Admin";
+import StoreAccess from "@/pages/StoreAccess";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -13,7 +14,9 @@ function Router() {
     <Route path="/" component={Home} />
     <Route path="/pedido" component={TrackOrder} />
     <Route path="/pedido/:publicId" component={TrackOrder} />
+    <Route path="/acesso-loja" component={StoreAccess} />
     <Route path="/admin" component={Admin} />
+      <Route path="/admin/financeiro" component={Admin} />
     <Route path="/admin/cardapio" component={Admin} />
     <Route path="/admin/loja" component={Admin} />
     <Route path="/admin/equipe" component={Admin} />

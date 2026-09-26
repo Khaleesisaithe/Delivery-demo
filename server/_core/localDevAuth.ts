@@ -1,4 +1,4 @@
-import type { User } from "../../drizzle/schema";
+import type { SessionUser } from "../auth/session";
 
 type LocalEnvironment = NodeJS.ProcessEnv;
 
@@ -6,7 +6,7 @@ export function isLocalDevAuthEnabled(env: LocalEnvironment = process.env): bool
   return env.NODE_ENV === "development" && env.LOCAL_DEV_AUTH === "true";
 }
 
-export function createLocalDevUser(env: LocalEnvironment = process.env): User {
+export function createLocalDevUser(env: LocalEnvironment = process.env): SessionUser {
   const role = env.LOCAL_DEV_ROLE === "staff" ? "staff" : env.LOCAL_DEV_ROLE === "user" ? "user" : "admin";
   const now = new Date();
   return {
@@ -14,10 +14,10 @@ export function createLocalDevUser(env: LocalEnvironment = process.env): User {
     openId: "local-vscode-user",
     name: env.LOCAL_DEV_NAME || "Desenvolvedor local",
     email: env.LOCAL_DEV_EMAIL || "dev@localhost",
-    loginMethod: "local-development-only",
     role,
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,
+    passwordResetRequired: false,
   };
 }

@@ -4,25 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fff8f1" />
-    <meta name="description" content="Feito na brasa, chega quentinho. Peça seu sabor favorito pela Brasa & Ponto e acompanhe o pedido em tempo real." />
+    <meta name="description" content="Confira o cardápio, peça online e acompanhe seu pedido." />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Brasa & Ponto — Burger de verdade" />
-    <meta property="og:description" content="Hambúrguer artesanal, ingredientes de verdade e aquele sabor que chama de volta." />
-    <meta property="og:image" content="/assets/food/brasa-hero.jpg" />
+    <meta property="og:title" content="Delivery da casa" />
+    <meta property="og:description" content="Peça online e acompanhe seu pedido." />
+    <meta property="og:image" content="/pwa-icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Brasa & Ponto" />
+    <meta name="apple-mobile-web-app-title" content="Delivery" />
     <link rel="icon" type="image/svg+xml" href="/pwa-icon.svg" />
     <link rel="apple-touch-icon" href="/pwa-icon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-    <title>Brasa & Ponto — Burger de verdade</title>
+    <title>Delivery da casa</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));</script>
+    <script defer src="/sw-register.js"></script>
   </body>
 </html>

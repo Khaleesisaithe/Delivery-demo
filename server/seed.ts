@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { getDb } from "./db";
+import { randomBytes } from "node:crypto";
+import { closeDb, getDb } from "./db";
 import { categories, customers, orderItemOptions, orderItems, orderStatusHistory, orders, productOptions, products, storeSettings } from "../drizzle/schema";
 
 const menu = [
@@ -32,31 +33,40 @@ const menu = [
     ["Cheesecake de Frutas", "Cream cheese leve com frutas vermelhas.", 1690, false],
     ["Milk-shake de Paçoca", "Sorvete de baunilha batido com paçoca · 400ml.", 1890, false],
   ] },
+  { name: "Açaí", slug: "acai", products: [["Açaí da Casa", "Açaí com frutas e acompanhamentos.", 2490, true]] },
+  { name: "Sucos naturais", slug: "sucos-naturais", products: [["Suco Natural", "Suco preparado na hora.", 1200, false]] },
+  { name: "Marmitex", slug: "marmitex", products: [["Marmitex do Dia", "Consulte as opções e acompanhamentos.", 2590, false]] },
 ] as const;
 
 async function main() {
   const db = await getDb();
   if (!db) throw new Error("DATABASE_URL indisponível; configure o banco e tente novamente.");
+  const includeDemoMenu = process.argv.includes("--demo") || process.env.SEED_DEMO_MENU === "true";
+  const includeSampleOrders = process.argv.includes("--sample-orders") || process.env.SEED_SAMPLE_ORDERS === "true";
   const existing = await db.select({ id: categories.id }).from(categories).limit(1);
-  if (existing.length) {
-    console.log("Dados de demonstração já existem; seed não alterou os dados atuais.");
+  const existingProducts = await db.select({ id: products.id }).from(products).limit(1);
+  const canAddMenu = !existingProducts.length;
+  if ((!canAddMenu && !includeSampleOrders) || (existing.length && !includeDemoMenu && !includeSampleOrders)) {
+    console.log("A loja já possui dados; seed não alterou produtos, configurações ou pedidos.");
     return;
   }
-
-  await db.insert(storeSettings).values({
-    name: "Brasa & Ponto", tagline: "Burger de verdade, do nosso fogo pra sua casa.", phone: "5511999999999",
-    address: "Rua dos Pinheiros, 245 · São Paulo, SP", businessHours: "Ter–Dom · 18h às 23h",
-    averageDeliveryMinutes: 35, deliveryFeeCents: 700, minimumOrderCents: 2000, isOpen: true,
+  const [existingSettings] = await db.select({ id: storeSettings.id }).from(storeSettings).limit(1);
+  if (!existingSettings) await db.insert(storeSettings).values({
+    name: "Sua loja", tagline: "Feito com carinho, do nosso balcão pra sua casa.", phone: "",
+    address: "", brandColor: "#C84B2F", businessHours: "", logoUrl: null, bannerUrl: null,
+    averageDeliveryMinutes: 35, deliveryFeeCents: 0, minimumOrderCents: 0, isOpen: false,
     closedMessage: "Voltamos às 18h.", paymentMethods: JSON.stringify(["pix", "cash", "card_delivery", "card_pickup"]),
   });
   for (let index = 0; index < menu.length; index++) {
     const group = menu[index];
-    const [created] = await db.insert(categories).values({ name: group.name, slug: group.slug, sortOrder: index }).$returningId();
+    const [existingCategory] = await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, group.slug)).limit(1);
+    const [created] = existingCategory ? [existingCategory] : await db.insert(categories).values({ name: group.name, slug: group.slug, sortOrder: index }).$returningId();
+    if (!includeDemoMenu || !canAddMenu) continue;
     for (let productIndex = 0; productIndex < group.products.length; productIndex++) {
       const product = group.products[productIndex];
       const [item] = await db.insert(products).values({
         categoryId: created.id, name: product[0], description: product[1], priceCents: product[2],
-        imageUrl: "/assets/food/brasa-burger.jpg", isAvailable: true, isFeatured: product[3], sortOrder: productIndex,
+        imageUrl: "/assets/food/burger.jpg", isAvailable: true, isFeatured: product[3], sortOrder: productIndex,
       }).$returningId();
       if (group.slug === "hamburgueres") {
         await db.insert(productOptions).values([
@@ -68,25 +78,27 @@ async function main() {
     }
   }
 
-  const sampleOrders = [
+  const sampleOrders = includeDemoMenu && includeSampleOrders ? [
     { status: "received" as const, name: "Maria Silva", phone: "5511999000101", productId: 2, totalCents: 4390, paymentMethod: "pix" as const },
     { status: "preparing" as const, name: "Rafael Costa", phone: "5511999000102", productId: 1, totalCents: 3990, paymentMethod: "card_delivery" as const },
     { status: "ready" as const, name: "Lúcia Martins", phone: "5511999000103", productId: 6, totalCents: 5390, paymentMethod: "cash" as const },
     { status: "out_for_delivery" as const, name: "João Pedro", phone: "5511999000104", productId: 3, totalCents: 4590, paymentMethod: "pix" as const },
-  ];
-  for (const sample of sampleOrders) {
+  ] : [];
+  for (let sampleIndex = 0; sampleIndex < sampleOrders.length; sampleIndex++) {
+    const sample = sampleOrders[sampleIndex];
+    const demoOrderNumber = `DEMO-${String(sampleIndex + 1).padStart(2, "0")}`;
+    const [alreadySeeded] = await db.select({ id: orders.id }).from(orders).where(eq(orders.orderNumber, demoOrderNumber)).limit(1);
+    if (alreadySeeded) continue;
     await db.insert(customers).values({ name: sample.name, phone: sample.phone });
     const [customer] = await db.select().from(customers).where(eq(customers.phone, sample.phone)).limit(1);
     const product = (await db.select().from(products).where(eq(products.id, sample.productId)).limit(1))[0];
-    const publicId = `${Math.random().toString(16).slice(2).padEnd(24, "0").slice(0, 24)}`;
+    const publicId = randomBytes(12).toString("hex");
     const [createdOrder] = await db.insert(orders).values({
-      publicId, orderNumber: null, customerId: customer.id, deliveryType: "delivery", status: sample.status,
+      publicId, orderNumber: demoOrderNumber, customerId: customer.id, deliveryType: "delivery", status: sample.status,
       paymentMethod: sample.paymentMethod, subtotalCents: sample.totalCents - 700, deliveryFeeCents: 700,
       discountCents: 0, totalCents: sample.totalCents, street: "Rua dos Pinheiros", streetNumber: "245",
       neighborhood: "Pinheiros", city: "São Paulo", postalCode: "05422-010",
     }).$returningId();
-    const orderNumber = `BP-${String(createdOrder.id).padStart(5, "0")}`;
-    await db.update(orders).set({ orderNumber }).where(eq(orders.id, createdOrder.id));
     const [createdItem] = await db.insert(orderItems).values({
       orderId: createdOrder.id, productId: product.id, productName: product.name, unitPriceCents: product.priceCents,
       quantity: 1, note: null,
@@ -95,7 +107,7 @@ async function main() {
     if (sample.status !== "received") await db.insert(orderStatusHistory).values({ orderId: createdOrder.id, status: sample.status, note: "Status atual de demonstração", changedBy: "Equipe da loja" });
     if (sample.productId === 2) await db.insert(orderItemOptions).values({ orderItemId: createdItem.id, optionName: "Bacon extra", priceCents: 500 });
   }
-  console.log(`Seed concluído: ${menu.reduce((sum, group) => sum + group.products.length, 0)} produtos, ${sampleOrders.length} pedidos e 5 categorias.`);
+  console.log(`Seed concluído: ${includeDemoMenu ? menu.reduce((sum, group) => sum + group.products.length, 0) : 0} produtos de demonstração, ${sampleOrders.length} pedidos fictícios e ${menu.length} categorias.`);
 }
 
-main().catch(error => { console.error(error); process.exit(1); });
+main().catch(error => { console.error(error); process.exitCode = 1; }).finally(closeDb);

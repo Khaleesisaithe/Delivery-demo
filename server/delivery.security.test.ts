@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { adminProcedure, staffProcedure } from "./delivery/shared";
-import { router } from "./_core/trpc";
+import { protectedProcedure, router } from "./_core/trpc";
 import type { TrpcContext } from "./_core/context";
 
 function userContext(role: "admin" | "staff" | "user"): TrpcContext {
@@ -13,6 +13,7 @@ function userContext(role: "admin" | "staff" | "user"): TrpcContext {
 }
 
 const guardRouter = router({ staff: staffProcedure.query(({ ctx }) => ctx.user.role), owner: adminProcedure.query(({ ctx }) => ctx.user.role) });
+const passwordGateRouter = router({ privateData: protectedProcedure.query(() => "private") });
 
 describe("delivery role authorization", () => {
   it("allows staff through the staff order guard but denies owner-only operations", async () => {
@@ -37,5 +38,13 @@ describe("delivery role authorization", () => {
     await expect(caller.delivery.orders.adminStats()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.delivery.catalog.adminData()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.delivery.team.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("blocks private endpoints until a temporary password is changed", async () => {
+    const context = userContext("staff");
+    context.user!.passwordResetRequired = true;
+    const privateCaller = passwordGateRouter.createCaller(context);
+    await expect(privateCaller.privateData()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const authCaller = appRouter.createCaller(context);
+    await expect(authCaller.auth.me()).resolves.toMatchObject({ passwordResetRequired: true });
   });
 });

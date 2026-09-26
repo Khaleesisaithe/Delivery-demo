@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brasa-shell-v1';
+const CACHE_NAME = 'delivery-shell-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/pwa-icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).catch(() => {}));
