@@ -78,7 +78,10 @@ export function createApp(app = express()) {
   app.use("/api/trpc/delivery.orders.track", trackingLimiter);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   if (process.env.VERCEL) {
-    app.get("*", (_req, res) => res.sendFile(path.resolve(process.cwd(), "public", "index.html")));
+    app.get("*", (req, res, next) => {
+      if (path.extname(req.path)) return next();
+      return res.sendFile(path.resolve(process.cwd(), "public", "index.html"));
+    });
   }
   return app;
 }
