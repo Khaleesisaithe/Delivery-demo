@@ -27,9 +27,8 @@ export function validateProductionEnvironment(): void {
   if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 5) throw new Error("TRUST_PROXY_HOPS must be an integer from 0 to 5.");
 }
 
-export function createApp() {
+export function createApp(app = express()) {
   validateProductionEnvironment();
-  const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? (process.env.VERCEL ? "1" : "0")));
   app.use(helmet({
