@@ -114,6 +114,8 @@ Não compartilhe backups, dados de pedidos ou credenciais entre clientes. Defina
 
 O projeto inclui um entrypoint Express no padrão da Vercel (`index.ts`), `vercel.json`, fallback SPA para rotas diretas (`/acesso-loja`, `/pedido/:id`) e build Vite servido como assets estáticos pelo CDN. A API tRPC roda no mesmo Express como uma Vercel Function; o limite da função está configurado em 60 segundos.
 
+Para criar e conectar um MySQL passo a passo, consulte [GUIA-MYSQL-VERCEL.md](./GUIA-MYSQL-VERCEL.md). O guia usa TiDB Cloud Starter como exemplo e mostra como definir `DATABASE_URL` sem colocar credenciais no Git.
+
 1. Importe o repositório privado `Khaleesisaithe/Delivery-demo` no time/conta corretos da Vercel (a integração GitHub precisa ter permissão sobre esse repositório). Use o projeto `delivery-demo` ou o projeto correspondente já existente, com a raiz na pasta do repositório.
 2. No projeto Vercel, configure `DATABASE_URL` com o MySQL **privado e dedicado a esta loja** e `DATABASE_SSL=true` em Production e Preview. Adicione `DATABASE_SSL_CA` (certificado PEM, se o provedor exigir CA própria) ou monte um arquivo e defina `DATABASE_SSL_CA_FILE`; use no máximo uma das opções. Nunca coloque segredos no Git ou em código `VITE_*`.
 3. Vercel injeta a URL da implantação; o app a usa se `APP_URL` não estiver definido. Se precisar fixar domínio, adicione a origem HTTPS canônica em `APP_URL`. Garanta que `LOCAL_DEV_AUTH` não seja ativado. Configure outros segredos da Cloud API do WhatsApp somente se for utilizar mensagens automáticas.
