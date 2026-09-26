@@ -4,9 +4,9 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
-import { authSessions, users } from "../../drizzle/schema";
-import { getDb } from "../db";
-import { hashPassword } from "../auth/password";
+import { authSessions, users } from "../../drizzle/schema.js";
+import { getDb } from "../db.js";
+import { hashPassword } from "../auth/password.js";
 
 const emailSchema = z.string().trim().email().max(320).transform(value => value.toLowerCase());
 function askHidden(question: string): Promise<string> {

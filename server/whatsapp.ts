@@ -1,4 +1,4 @@
-import type { Order } from "../drizzle/schema";
+import type { Order } from "../drizzle/schema.js";
 
 const statusCopy: Record<Order["status"], string> = {
   received: "Pedido recebido",

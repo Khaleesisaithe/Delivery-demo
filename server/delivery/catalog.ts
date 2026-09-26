@@ -1,10 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
-import { categories, productOptions, products, storeSettings } from "../../drizzle/schema";
-import { adminProcedure, requireDb } from "./shared";
-import { publicProcedure, router } from "../_core/trpc";
-import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone";
+import { categories, productOptions, products, storeSettings } from "../../drizzle/schema.js";
+import { adminProcedure, requireDb } from "./shared.js";
+import { publicProcedure, router } from "../_core/trpc.js";
+import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone.js";
 
 const optionInput = z.object({ name: z.string().trim().min(1).max(120), priceCents: z.number().int().min(0).max(100000), isAvailable: z.boolean().default(true) });
 const productFields = z.object({

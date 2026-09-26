@@ -2,14 +2,14 @@ import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
-import { customers, orderItemOptions, orderItems, orderStatusHistory, orders, productOptions, products, storeSettings } from "../../drizzle/schema";
-import { buildWhatsAppLink, notifyOrderStatus } from "../whatsapp";
-import { adminProcedure, staffProcedure, requireDb, statusLabels } from "./shared";
-import { businessDateKey, businessDayBounds, businessDayRange } from "./businessDay";
-import { canTransitionOrder } from "./workflow";
-import { recalculateEditedSubtotal } from "./orderEditing";
-import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone";
-import { publicProcedure, router } from "../_core/trpc";
+import { customers, orderItemOptions, orderItems, orderStatusHistory, orders, productOptions, products, storeSettings } from "../../drizzle/schema.js";
+import { buildWhatsAppLink, notifyOrderStatus } from "../whatsapp.js";
+import { adminProcedure, staffProcedure, requireDb, statusLabels } from "./shared.js";
+import { businessDateKey, businessDayBounds, businessDayRange } from "./businessDay.js";
+import { canTransitionOrder } from "./workflow.js";
+import { recalculateEditedSubtotal } from "./orderEditing.js";
+import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone.js";
+import { publicProcedure, router } from "../_core/trpc.js";
 
 const statusValues = Object.keys(statusLabels) as [keyof typeof statusLabels, ...(keyof typeof statusLabels)[]];
 const orderInput = z.object({

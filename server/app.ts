@@ -5,10 +5,10 @@ import path from "node:path";
 import { rateLimit } from "express-rate-limit";
 import { sql } from "drizzle-orm";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "./routers";
-import { getDb } from "./db";
-import { createContext } from "./_core/context";
-import { isLocalDevAuthEnabled } from "./_core/localDevAuth";
+import { appRouter } from "./routers.js";
+import { getDb } from "./db.js";
+import { createContext } from "./_core/context.js";
+import { isLocalDevAuthEnabled } from "./_core/localDevAuth.js";
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 12, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." } });
 const orderLimiter = rateLimit({ windowMs: 60 * 1000, limit: 8, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitos pedidos em sequência. Aguarde um instante." } });

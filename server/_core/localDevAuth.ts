@@ -1,4 +1,4 @@
-import type { SessionUser } from "../auth/session";
+import type { SessionUser } from "../auth/session.js";
 
 type LocalEnvironment = NodeJS.ProcessEnv;
 

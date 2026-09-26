@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { readSessionUser, type SessionUser } from "../auth/session";
-import { createLocalDevUser, isLocalDevAuthEnabled } from "./localDevAuth";
+import { readSessionUser, type SessionUser } from "../auth/session.js";
+import { createLocalDevUser, isLocalDevAuthEnabled } from "./localDevAuth.js";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];

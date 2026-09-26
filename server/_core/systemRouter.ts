@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { publicProcedure, router } from "./trpc";
-import { getDb } from "../db";
+import { publicProcedure, router } from "./trpc.js";
+import { getDb } from "../db.js";
 
 export const systemRouter = router({
   health: publicProcedure.query(async () => {

@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { getDb } from "../db";
-import { protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db.js";
+import { protectedProcedure } from "../_core/trpc.js";
 
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Acesso exclusivo do proprietário." });

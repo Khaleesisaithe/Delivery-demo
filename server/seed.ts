@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
-import { closeDb, getDb } from "./db";
-import { categories, customers, orderItemOptions, orderItems, orderStatusHistory, orders, productOptions, products, storeSettings } from "../drizzle/schema";
+import { closeDb, getDb } from "./db.js";
+import { categories, customers, orderItemOptions, orderItems, orderStatusHistory, orders, productOptions, products, storeSettings } from "../drizzle/schema.js";
 
 const menu = [
   { name: "Hambúrgueres", slug: "hamburgueres", products: [

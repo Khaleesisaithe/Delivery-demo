@@ -2,10 +2,10 @@ import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { authSessions, users } from "../../drizzle/schema";
-import { adminProcedure, requireDb } from "./shared";
-import { router } from "../_core/trpc";
-import { hashPassword, newTemporaryPassword } from "../auth/password";
+import { authSessions, users } from "../../drizzle/schema.js";
+import { adminProcedure, requireDb } from "./shared.js";
+import { router } from "../_core/trpc.js";
+import { hashPassword, newTemporaryPassword } from "../auth/password.js";
 
 export const teamRouter = router({
   list: adminProcedure.query(async () => {

@@ -1,11 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { authSessions, users } from "../../drizzle/schema";
-import { getDb } from "../db";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { clearSessionCookie, issueSession, revokeRequestSession, toSessionUser } from "./session";
-import { hashPassword, newTemporaryPassword, verifyPassword } from "./password";
+import { authSessions, users } from "../../drizzle/schema.js";
+import { getDb } from "../db.js";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc.js";
+import { clearSessionCookie, issueSession, revokeRequestSession, toSessionUser } from "./session.js";
+import { hashPassword, newTemporaryPassword, verifyPassword } from "./password.js";
 
 const emailSchema = z.string().trim().email().max(320).transform(value => value.toLowerCase());
 const passwordSchema = z.string().min(12).max(128);

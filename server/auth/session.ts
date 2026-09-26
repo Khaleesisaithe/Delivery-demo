@@ -2,10 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, lt } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { parse } from "cookie";
-import { authSessions, users, type User } from "../../drizzle/schema";
-import { COOKIE_NAME } from "../../shared/const";
-import { getDb } from "../db";
-import { getSessionCookieOptions } from "../_core/cookies";
+import { authSessions, users, type User } from "../../drizzle/schema.js";
+import { COOKIE_NAME } from "../../shared/const.js";
+import { getDb } from "../db.js";
+import { getSessionCookieOptions } from "../_core/cookies.js";
 
 export const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 export type SessionUser = Pick<User, "id" | "openId" | "name" | "email" | "role" | "createdAt" | "updatedAt" | "lastSignedIn" | "passwordResetRequired">;
