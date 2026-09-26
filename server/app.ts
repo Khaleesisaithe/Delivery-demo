@@ -56,13 +56,19 @@ export function createApp(app = express()) {
     if (!db) { res.status(503).json({ ok: false, database: "unavailable" }); return; }
     try { await db.execute(sql`select 1`); res.json({ ok: true, database: "connected" }); }
     catch (error) {
-      const details = error as { name?: unknown; code?: unknown; errno?: unknown; sqlState?: unknown };
-      console.error("[Health] Database ping failed", {
-        name: typeof details.name === "string" ? details.name : "Error",
-        code: typeof details.code === "string" ? details.code : undefined,
-        errno: typeof details.errno === "number" ? details.errno : undefined,
-        sqlState: typeof details.sqlState === "string" ? details.sqlState : undefined,
-      });
+      const causes: Array<{ name: string; code?: string; errno?: number; sqlState?: string }> = [];
+      let current: unknown = error;
+      for (let depth = 0; depth < 5 && current && typeof current === "object"; depth++) {
+        const details = current as { name?: unknown; code?: unknown; errno?: unknown; sqlState?: unknown; cause?: unknown };
+        causes.push({
+          name: typeof details.name === "string" ? details.name : "Error",
+          code: typeof details.code === "string" ? details.code : undefined,
+          errno: typeof details.errno === "number" ? details.errno : undefined,
+          sqlState: typeof details.sqlState === "string" ? details.sqlState : undefined,
+        });
+        current = details.cause;
+      }
+      console.error("[Health] Database ping failed", { causes });
       res.status(503).json({ ok: false, database: "unavailable" });
     }
   });
