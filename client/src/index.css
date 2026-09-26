@@ -423,3 +423,79 @@ a { color:inherit; text-decoration:none; }
 @keyframes admin-content-in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 @media(max-width:700px) { .finance-summary { grid-template-columns:1fr; }.finance-summary article { grid-template-columns:1fr auto; align-items:center; }.finance-day { grid-template-columns:60px minmax(32px,1fr) 68px 82px; gap:7px; font-size:10px; }.finance-actions { align-items:stretch; flex-direction:column; }.finance-actions label,.finance-actions select { width:100%; }.finance-actions .secondary-button { justify-content:center; }.order-edit-grid { grid-template-columns:1fr; }.editable-line { grid-template-columns:minmax(80px,1fr) 64px; }.editable-line label:last-child { grid-column:1 / -1; } }
 @media(prefers-reduced-motion:reduce) { .finance-page { animation:none; }.finance-bar i { transition:none; } }
+
+/* Private team access: interactive invitation portal */
+.store-access-page { min-height:100svh; display:grid; place-items:center; padding:clamp(16px,4vw,44px); background:radial-gradient(ellipse at 6% 9%,rgba(200,75,47,.12),transparent 35%),radial-gradient(ellipse at 98% 92%,rgba(56,102,73,.09),transparent 32%),#f5f2eb; }
+.store-access-shell { width:min(100%,1050px); }
+.store-access-header { display:flex; justify-content:space-between; align-items:center; margin:0 0 17px; }
+.store-access-brand { display:flex; align-items:center; gap:11px; color:#31251e; }
+.store-access-brand>span:last-child { display:grid; gap:2px; }
+.store-access-brand b { font-size:14px; letter-spacing:-.02em; }
+.store-access-brand small { color:#81756c; font-size:11px; }
+.store-access-secure { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(57,104,77,.16); border-radius:99px; padding:8px 11px; color:#3b6b4e; background:rgba(255,255,255,.75); font-size:11px; font-weight:700; }
+.store-access-grid { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(280px,.72fr); overflow:hidden; border:1px solid rgba(99,70,49,.13); border-radius:24px; background:#fffefa; box-shadow:0 26px 70px rgba(71,47,31,.11); animation:modal-in .26s cubic-bezier(.23,1,.32,1); }
+.store-access-card { min-width:0; display:grid; align-content:start; gap:14px; padding:clamp(24px,5vw,52px); }
+.store-access-eyebrow { display:flex; align-items:center; gap:8px; color:#8a604d; font-size:10px; font-weight:800; letter-spacing:.12em; }
+.store-access-eyebrow>span { width:7px; height:7px; border-radius:50%; background:#c84b2f; box-shadow:0 0 0 4px rgba(200,75,47,.1); }
+.store-access-card h1 { margin:2px 0 0; color:#30231d; font-family:'DM Serif Display',serif; font-size:clamp(36px,5vw,50px); font-weight:400; line-height:.99; letter-spacing:-.04em; }
+.store-access-card h1 em { color:#c84b2f; font-style:normal; }
+.store-access-intro { max-width:390px; margin:0; color:#766b62; font-size:13px; line-height:1.65; }
+.store-access-card form { display:grid; gap:8px; margin-top:6px; }
+.store-access-card form>label,.store-access-password-label label { color:#47392f; font-size:11px; font-weight:750; }
+.store-access-card input { width:100%; min-height:46px; border:1px solid #e4ddd3; border-radius:10px; background:#fff; padding:0 13px; color:#302720; font:inherit; font-size:13px; outline:0; transition:border-color .16s ease-out,box-shadow .16s ease-out; }
+.store-access-card input::placeholder { color:#b3aaa1; }
+.store-access-card input:focus { border-color:#c84b2f; box-shadow:0 0 0 3px rgba(200,75,47,.13); }
+.store-access-password-label { display:flex; align-items:center; justify-content:space-between; margin-top:5px; }
+.store-access-password-label>span { color:#9b9086; font-size:10px; }
+.store-access-password-wrap { position:relative; }
+.store-access-password-wrap input { padding-right:48px; }
+.store-access-reveal { position:absolute; top:50%; right:5px; display:grid; width:36px; height:36px; place-items:center; transform:translateY(-50%); border:0; border-radius:8px; color:#82746a; background:transparent; cursor:pointer; transition:background .15s,color .15s; }
+.store-access-reveal:hover { color:#a43d27; background:#f8f0e8; }
+.store-access-submit { display:flex; align-items:center; justify-content:center; gap:10px; min-height:48px; margin-top:7px; border:0; border-radius:10px; color:#fff; background:#bd452c; box-shadow:0 8px 18px rgba(160,59,37,.2); font:inherit; font-size:13px; font-weight:750; cursor:pointer; transition:background .17s,transform .17s,box-shadow .17s; }
+.store-access-submit:hover:not(:disabled) { transform:translateY(-1px); background:#a83a24; box-shadow:0 10px 22px rgba(160,59,37,.27); }
+.store-access-submit:active:not(:disabled) { transform:scale(.98); }
+.store-access-submit:disabled { opacity:.72; cursor:wait; }
+.store-access-spinner { width:15px; height:15px; border:2px solid rgba(255,255,255,.44); border-top-color:#fff; border-radius:50%; animation:store-access-spin .75s linear infinite; }
+@keyframes store-access-spin { to { transform:rotate(360deg); } }
+.store-access-help-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:43px; padding:8px 2px; border:0; border-bottom:1px solid #eee8e0; color:#694c3d; background:transparent; font:inherit; font-size:11px; font-weight:750; text-align:left; cursor:pointer; }
+.store-access-help-toggle>span { display:flex; align-items:center; gap:8px; }
+.store-access-help-toggle>svg { transition:transform .18s; }
+.store-access-help-toggle>svg.is-open { transform:rotate(180deg); }
+.store-access-help-panel { display:grid; gap:14px; padding:8px 0 2px; animation:admin-content-in .18s ease-out both; }
+.store-access-step { display:flex; align-items:flex-start; gap:10px; }
+.store-access-step>span { display:grid; flex:0 0 23px; width:23px; height:23px; place-items:center; border-radius:50%; color:#a53f29; background:#f8e8df; font-size:10px; font-weight:800; }
+.store-access-step p { display:grid; gap:3px; margin:0; }
+.store-access-step b { color:#43362c; font-size:11px; }
+.store-access-step small { color:#82776e; font-size:10px; line-height:1.5; }
+.store-access-owner-note { display:flex; gap:8px; padding:11px; border:1px solid #ece5d9; border-radius:10px; color:#766956; background:#faf8f2; font-size:10px; line-height:1.55; }
+.store-access-owner-note svg { flex:0 0 auto; margin-top:1px; color:#9c6845; }
+.store-access-owner-note code { color:#593e2a; font-size:10px; }
+.store-access-assurance { display:flex; align-items:flex-start; gap:10px; margin-top:5px; padding:12px; border:1px solid rgba(55,112,78,.15); border-radius:11px; color:#38694b; background:#f3f8f2; }
+.store-access-assurance>svg { flex:0 0 auto; margin-top:1px; }
+.store-access-assurance p { display:grid; gap:3px; margin:0; }
+.store-access-assurance b { font-size:10px; }
+.store-access-assurance span { color:#647769; font-size:10px; line-height:1.5; }
+.store-access-footnote { display:flex; align-items:center; gap:6px; color:#91877e; font-size:9px; line-height:1.45; }
+.store-access-side { position:relative; display:flex; flex-direction:column; align-items:flex-start; min-height:100%; overflow:hidden; padding:clamp(26px,4vw,42px); color:#f9f5ed; background:radial-gradient(ellipse at 85% 10%,rgba(225,150,85,.2),transparent 34%),linear-gradient(145deg,#302c25,#464333 65%,#354d3a); }
+.store-access-side:after { position:absolute; right:-80px; bottom:-110px; width:290px; height:290px; border:1px solid rgba(255,255,255,.09); border-radius:50%; box-shadow:0 0 0 30px rgba(255,255,255,.025),0 0 0 65px rgba(255,255,255,.02); content:""; pointer-events:none; }
+.store-access-side-icon { display:grid; width:50px; height:50px; place-items:center; border:1px solid rgba(255,255,255,.19); border-radius:15px; color:#ffd7a9; background:rgba(255,255,255,.08); }
+.store-access-side-kicker { margin-top:34px; color:#f2c59d; font-size:9px; font-weight:800; letter-spacing:.14em; }
+.store-access-side h2 { max-width:330px; margin:11px 0 0; font-family:'DM Serif Display',serif; font-size:clamp(26px,3vw,36px); font-weight:400; line-height:1.1; }
+.store-access-side>p { max-width:350px; margin:13px 0 0; color:rgba(249,245,237,.72); font-size:12px; line-height:1.7; }
+.store-access-side-list { display:grid; gap:13px; margin-top:28px; }
+.store-access-side-list span { display:flex; align-items:center; gap:9px; color:rgba(249,245,237,.88); font-size:11px; }
+.store-access-side-list svg { color:#f2c59d; }
+.store-access-side-bottom { position:relative; z-index:1; margin-top:auto; padding-top:28px; color:rgba(249,245,237,.55); font-size:10px; }
+@media(max-width:740px) { .store-access-page { align-items:start; padding:14px; }.store-access-header { margin:2px 1px 12px; }.store-access-grid { grid-template-columns:1fr; border-radius:19px; }.store-access-side { min-height:0; padding:25px 27px; }.store-access-side-kicker { margin-top:21px; }.store-access-side h2 { max-width:420px; font-size:29px; }.store-access-side>p { margin-top:9px; }.store-access-side-list { grid-template-columns:1fr 1fr; gap:11px; margin-top:18px; }.store-access-side-bottom { padding-top:20px; } }
+@media(max-width:420px) { .store-access-page { padding:10px; }.store-access-header { align-items:flex-start; }.store-access-secure { padding:7px 8px; font-size:9px; }.store-access-card { padding:23px 19px; }.store-access-card h1 { font-size:39px; }.store-access-side { padding:23px 20px; }.store-access-side-list { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .store-access-grid,.store-access-help-panel,.store-access-spinner { animation:none; }.store-access-card input,.store-access-submit,.store-access-help-toggle>svg { transition:none; } }
+
+.store-access-card { width:auto; }
+
+.store-access-role-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.store-access-role-grid article { display:flex; align-items:flex-start; gap:8px; padding:10px; border:1px solid #eee6dc; border-radius:9px; background:#fffdfa; }
+.store-access-role-grid article>svg { flex:0 0 auto; margin-top:1px; color:#a64b32; }
+.store-access-role-grid article>span { display:grid; gap:3px; }
+.store-access-role-grid b { color:#47382d; font-size:10px; }
+.store-access-role-grid small { color:#847a71; font-size:9px; line-height:1.45; }
+@media(max-width:430px) { .store-access-role-grid { grid-template-columns:1fr; } }

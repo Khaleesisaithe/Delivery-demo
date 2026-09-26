@@ -57,26 +57,32 @@ async function main() {
     averageDeliveryMinutes: 35, deliveryFeeCents: 0, minimumOrderCents: 0, isOpen: false,
     closedMessage: "Voltamos às 18h.", paymentMethods: JSON.stringify(["pix", "cash", "card_delivery", "card_pickup"]),
   });
-  for (let index = 0; index < menu.length; index++) {
-    const group = menu[index];
-    const [existingCategory] = await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, group.slug)).limit(1);
-    const [created] = existingCategory ? [existingCategory] : await db.insert(categories).values({ name: group.name, slug: group.slug, sortOrder: index }).$returningId();
-    if (!includeDemoMenu || !canAddMenu) continue;
-    for (let productIndex = 0; productIndex < group.products.length; productIndex++) {
-      const product = group.products[productIndex];
-      const [item] = await db.insert(products).values({
-        categoryId: created.id, name: product[0], description: product[1], priceCents: product[2],
-        imageUrl: "/assets/food/burger.jpg", isAvailable: true, isFeatured: product[3], sortOrder: productIndex,
-      }).$returningId();
-      if (group.slug === "hamburgueres") {
-        await db.insert(productOptions).values([
-          { productId: item.id, name: "Queijo extra", priceCents: 300, isAvailable: true },
-          { productId: item.id, name: "Bacon extra", priceCents: 500, isAvailable: true },
-          { productId: item.id, name: "Ovo caipira", priceCents: 250, isAvailable: true },
-        ]);
+  await db.transaction(async tx => {
+    for (let index = 0; index < menu.length; index++) {
+      const group = menu[index];
+      const [existingCategory] = await tx.select({ id: categories.id }).from(categories).where(eq(categories.slug, group.slug)).limit(1);
+      const [created] = existingCategory ? [existingCategory] : await tx.insert(categories).values({ name: group.name, slug: group.slug, sortOrder: index }).$returningId();
+      if (!includeDemoMenu || !canAddMenu) continue;
+      for (let productIndex = 0; productIndex < group.products.length; productIndex++) {
+        const product = group.products[productIndex];
+        const [item] = await tx.insert(products).values({
+          categoryId: created.id, name: product[0], description: product[1], priceCents: product[2],
+          imageUrl: "/assets/food/burger.jpg", isAvailable: true, isFeatured: product[3], sortOrder: productIndex,
+        }).$returningId();
+        if (group.slug === "hamburgueres") {
+          await tx.insert(productOptions).values([
+            { productId: item.id, name: "Queijo extra", priceCents: 300, isAvailable: true },
+            { productId: item.id, name: "Bacon extra", priceCents: 500, isAvailable: true },
+            { productId: item.id, name: "Ovo caipira", priceCents: 250, isAvailable: true },
+          ]);
+        }
       }
     }
-  }
+    if (includeDemoMenu && canAddMenu && process.env.SEED_DEMO_STORE_OPEN === "true") {
+      const [demoStore] = await tx.select({ id: storeSettings.id }).from(storeSettings).limit(1);
+      if (demoStore) await tx.update(storeSettings).set({ isOpen: true }).where(eq(storeSettings.id, demoStore.id));
+    }
+  });
 
   const sampleOrders = includeDemoMenu && includeSampleOrders ? [
     { status: "received" as const, name: "Maria Silva", phone: "5511999000101", productId: 2, totalCents: 4390, paymentMethod: "pix" as const },
