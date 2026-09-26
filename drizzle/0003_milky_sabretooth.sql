@@ -18,7 +18,7 @@ ALTER TABLE `store_settings` MODIFY COLUMN `isOpen` boolean NOT NULL DEFAULT fal
 ALTER TABLE `store_settings` ADD `brandColor` varchar(7) DEFAULT '#C84B2F' NOT NULL;--> statement-breakpoint
 ALTER TABLE `users` ADD `emailNormalized` varchar(320);--> statement-breakpoint
 UPDATE `users` SET `emailNormalized` = LOWER(TRIM(`email`)) WHERE `email` IS NOT NULL AND TRIM(`email`) <> '';--> statement-breakpoint
-UPDATE `users` AS current_user JOIN `users` AS earlier_user ON current_user.`emailNormalized` = earlier_user.`emailNormalized` AND current_user.`id` > earlier_user.`id` SET current_user.`emailNormalized` = CONCAT('legacy-', current_user.`id`, '@migration.invalid') WHERE current_user.`emailNormalized` IS NOT NULL;--> statement-breakpoint
+UPDATE `users` AS normalized_user JOIN `users` AS earlier_user ON normalized_user.`emailNormalized` = earlier_user.`emailNormalized` AND normalized_user.`id` > earlier_user.`id` SET normalized_user.`emailNormalized` = CONCAT('legacy-', normalized_user.`id`, '@migration.invalid') WHERE normalized_user.`emailNormalized` IS NOT NULL;--> statement-breakpoint
 UPDATE `users` SET `emailNormalized` = CONCAT('legacy-', `id`, '@migration.invalid') WHERE `emailNormalized` IS NULL OR `emailNormalized` = '';--> statement-breakpoint
 ALTER TABLE `users` MODIFY COLUMN `emailNormalized` varchar(320) NOT NULL;--> statement-breakpoint
 ALTER TABLE `users` ADD `passwordHash` varchar(255);--> statement-breakpoint

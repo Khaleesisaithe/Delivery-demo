@@ -36,6 +36,8 @@ pnpm db:setup
 pnpm dev
 ```
 
+Se uma migration falhar após executar parte do SQL, não fique repetindo `pnpm db:setup`: o MySQL pode confirmar DDL parcialmente antes do erro e a migration não fica registrada como concluída. Preserve/backup qualquer banco com dados. Em um banco local recém-criado e descartável, após atualizar para a correção, recrie o volume local somente se tiver certeza de que não precisa dos dados (`docker compose down -v` apaga o volume); depois rode novamente `docker compose up -d db` e `pnpm db:setup`.
+
 Por padrão, abra <http://localhost:3000>. Se a porta local estiver ocupada, o servidor de desenvolvimento procura as próximas portas livres; leia a mensagem do terminal. O atalho do Docker expõe o MySQL na porta `3307` do host.
 
 **Login local:** no modelo de desenvolvimento, `LOCAL_DEV_AUTH=true` permite inspecionar o painel sem criar uma conta. Funciona somente com `NODE_ENV=development`, e o servidor limita-se a `127.0.0.1`. É um bypass de desenvolvimento, não uma identidade persistida e **nunca deve ser ativado em produção**. Para testar permissões, selecione `LOCAL_DEV_ROLE=admin`, `staff` ou `user` e reinicie o servidor.
