@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { STORE_ACCESS_PATH } from "@/const";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -30,7 +31,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     if (!redirectOnUnauthenticated || meQuery.isLoading || logoutMutation.isPending || state.user) return;
-    const target = redirectPath || "/acesso-loja";
+    const target = redirectPath || STORE_ACCESS_PATH;
     if (typeof window !== "undefined" && window.location.pathname !== target) window.location.assign(target);
   }, [redirectOnUnauthenticated, redirectPath, logoutMutation.isPending, meQuery.isLoading, state.user]);
 

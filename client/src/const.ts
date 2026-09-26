@@ -1,1 +1,1 @@
-export const STORE_ACCESS_PATH = "/acesso-loja";
+export const STORE_ACCESS_PATH = "/cf22492d0a6e53488d1135b1";

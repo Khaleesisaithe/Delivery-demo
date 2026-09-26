@@ -25,6 +25,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { STORE_ACCESS_PATH } from "@/const";
 
 const menuItems = [
   { icon: ClipboardList, label: "Pedidos", path: "/admin" },
@@ -71,7 +72,7 @@ export default function DashboardLayout({
             </p>
           </div>
           <Button asChild size="lg" className="w-full shadow-lg hover:shadow-xl transition-all">
-            <Link href="/acesso-loja">Entrar com e-mail e senha</Link>
+            <Link href={STORE_ACCESS_PATH}>Entrar com e-mail e senha</Link>
           </Button>
         </div>
       </div>

@@ -8,13 +8,14 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import { STORE_ACCESS_PATH } from "@/const";
 
 function Router() {
   return <Switch>
     <Route path="/" component={Home} />
     <Route path="/pedido" component={TrackOrder} />
     <Route path="/pedido/:publicId" component={TrackOrder} />
-    <Route path="/acesso-loja" component={StoreAccess} />
+    <Route path={STORE_ACCESS_PATH} component={StoreAccess} />
     <Route path="/admin" component={Admin} />
       <Route path="/admin/financeiro" component={Admin} />
     <Route path="/admin/cardapio" component={Admin} />

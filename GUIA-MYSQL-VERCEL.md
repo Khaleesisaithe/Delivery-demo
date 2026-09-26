@@ -99,9 +99,9 @@ Após configurar `DATABASE_URL` e fazer um novo deploy:
 
 1. Abra `https://delivery-app-demo-khaleesi.vercel.app/healthz`. O endpoint deve responder com status saudável depois que a função alcançar a base.
 2. Abra a página da loja. A tela inicial deve carregar o nome e configurações da loja; se o banco estiver vazio ou a URL incorreta, o cardápio não carregará.
-3. Faça login do proprietário pelo endereço `/acesso-loja` e valide configurações, equipe e pedido de teste antes de divulgar o endereço.
+3. Faça login do proprietário pela rota privada informada pelo responsável do projeto (o caminho fica centralizado em `client/src/const.ts`) e valide configurações, equipe e pedido de teste antes de divulgar o endereço.
 
-**Importante:** hoje a proteção SSO da Vercel permanece ativa. Isso pode redirecionar o endereço padrão para o login da equipe Vercel mesmo que a aplicação e a base estejam funcionando. Para liberar a loja ao público, é necessário decidir separadamente se essa proteção será removida; o acesso da equipe da loja continua protegido pelo login próprio do app.
+**Importante:** no projeto demonstração atual, o SSO da Vercel no domínio padrão foi desativado para permitir que clientes vejam a loja. O painel interno continua exigindo login próprio e permissões da aplicação. A rota privada não é um substituto para essa autenticação.
 
 ## 5. Firewall e custo de conexão
 

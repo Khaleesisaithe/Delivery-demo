@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { STORE_ACCESS_PATH } from "@/const";
 import { UNAUTHED_ERR_MSG } from "@shared/const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
@@ -12,8 +13,8 @@ const queryClient = new QueryClient();
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError) || typeof window === "undefined") return;
   if (error.message !== UNAUTHED_ERR_MSG) return;
-  if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/acesso-loja") {
-    window.location.assign("/acesso-loja");
+  if (window.location.pathname.startsWith("/admin") && window.location.pathname !== STORE_ACCESS_PATH) {
+    window.location.assign(STORE_ACCESS_PATH);
   }
 };
 
