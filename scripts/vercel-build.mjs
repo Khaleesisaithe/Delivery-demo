@@ -44,6 +44,11 @@ if (isThisProductionDemo) {
     DB_CONNECTION_LIMIT: "1",
     SEED_DEMO_STORE_OPEN: "true",
   });
+  runPnpm(["exec", "tsx", "scripts/prepare-demo-production.ts"], {
+    ...process.env,
+    DATABASE_SSL: "true",
+    DB_CONNECTION_LIMIT: "1",
+  });
 } else {
   console.log(
     "Demo catalog bootstrap skipped (not the verified production deployment of Khaleesisaithe/Delivery-demo)."
