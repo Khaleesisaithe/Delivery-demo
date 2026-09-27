@@ -101,6 +101,12 @@ Após configurar `DATABASE_URL` e fazer um novo deploy:
 2. Abra a página da loja. A tela inicial deve carregar o nome e configurações da loja; se o banco estiver vazio ou a URL incorreta, o cardápio não carregará.
 3. Faça login do proprietário pela rota privada informada pelo responsável do projeto (o caminho fica centralizado em `client/src/const.ts`) e valide configurações, equipe e pedido de teste antes de divulgar o endereço.
 
+No painel, o proprietário cadastra funcionários em **Sua equipe**. O sistema gera uma senha temporária de uso único; compartilhe a URL privada e a senha apenas pelo canal privado escolhido, e o funcionário precisará criar sua própria senha no primeiro acesso. Não existe cadastro público. O endereço difícil de adivinhar reduz descoberta casual, mas não substitui login, rate limit, cookies seguros e controle de papel no servidor.
+
+No projeto demonstrativo atual, o build de produção executa as migrations versionadas antes de semear o catálogo, apenas para o projeto Vercel e branch principal configurados em `scripts/vercel-build.mjs`. A cópia para cliente não deve herdar o ID Vercel de demonstração; faça clone do repositório e configure o próprio projeto/banco isolado. O catálogo de demo é incluído somente se não houver produtos; os pedidos continuam semeados vazios. Em produção, confirme os logs do deploy e depois valide `/healthz`, cardápio, pedido e acompanhamento.
+
+O checkout exige nome e sobrenome, telefone/WhatsApp e CEP para entrega; **Buscar endereço** consulta ViaCEP, mas o cliente deve conferir rua, número, bairro, cidade e complemento. O perfil de atendente atualiza status e contata clientes, mas não altera dados/itens do pedido; somente o proprietário pode editar e confirmar mudanças. Notas internas recebem nome do autor; elas saem na comanda Epson interna, mas não na nota de entrega do cliente.
+
 **Importante:** no projeto demonstração atual, o SSO da Vercel no domínio padrão foi desativado para permitir que clientes vejam a loja. O painel interno continua exigindo login próprio e permissões da aplicação. A rota privada não é um substituto para essa autenticação.
 
 ## 5. Firewall e custo de conexão

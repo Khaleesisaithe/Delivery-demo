@@ -5,6 +5,10 @@ export type StoredOrderLine = {
 };
 export type OrderLineEdit = { id: number; quantity: number; note: string };
 
+export function canEditCustomerOrder(role: string): boolean {
+  return role === "admin";
+}
+
 export function recalculateEditedSubtotal(lines: StoredOrderLine[], edits: OrderLineEdit[]): number {
   if (!lines.length || lines.length !== edits.length) throw new RangeError("The edited lines must match the stored order.");
   const editsById = new Map<number, OrderLineEdit>();

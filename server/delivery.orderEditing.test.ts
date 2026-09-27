@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { recalculateEditedSubtotal } from "./delivery/orderEditing";
+import { canEditCustomerOrder, recalculateEditedSubtotal } from "./delivery/orderEditing";
+import { getEffectivePriceCents } from "../shared/pricing";
 
 describe("server-authoritative order edit pricing", () => {
+  it("uses a valid promotion price and otherwise keeps the regular price", () => {
+    expect(getEffectivePriceCents({ priceCents: 3200, isPromotion: true, promotionPriceCents: 2500 })).toBe(2500);
+    expect(getEffectivePriceCents({ priceCents: 3200, isPromotion: false, promotionPriceCents: 2500 })).toBe(3200);
+    expect(getEffectivePriceCents({ priceCents: 3200, isPromotion: true, promotionPriceCents: null })).toBe(3200);
+  });
+  it("allows only the owner to edit customer order details", () => {
+    expect(canEditCustomerOrder("admin")).toBe(true);
+    expect(canEditCustomerOrder("staff")).toBe(false);
+    expect(canEditCustomerOrder("user")).toBe(false);
+  });
   it("recalculates from stored unit and add-on snapshots", () => {
     const total = recalculateEditedSubtotal(
       [{ id: 8, unitPriceCents: 2500, optionUnitCents: 300 }, { id: 9, unitPriceCents: 1500, optionUnitCents: 0 }],

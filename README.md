@@ -47,22 +47,32 @@ Para experimentar dados fictícios, aplique `pnpm db:seed:demo`. Pedidos fictíc
 ## Personalização de cada empresa
 
 1. Crie a implantação e o banco isolados da empresa; não reaproveite dados de outra loja.
-2. Defina nome, slogan, telefone/WhatsApp, endereço, horário, fuso horário, cor, taxa de entrega, pedido mínimo, prazo estimado, formas de pagamento, logotipo e funcionamento na área administrativa **Sua loja**.
-3. Cadastre categorias, itens, preços, adicionais e imagens em **Seu cardápio**. As configurações de marca também aparecem no storefront e no cabeçalho da comanda impressa.
-4. Configure domínio, política de privacidade e termos da própria empresa. A aplicação não fornece aconselhamento jurídico nem publica uma política legal pronta. Antes de produção no Brasil, a empresa precisa revisar a LGPD, o aviso de privacidade e a base legal apropriada ao tratamento de dados de clientes.
-5. Substitua conteúdo demonstrativo, confirme horários/preços/endereço/entrega e faça pedidos reais de teste controlado antes de divulgar.
+2. O nome, slogan, cor, banner e logotipo são definidos pelo responsável técnico durante a personalização do clone. O perfil de proprietário não os altera pelo painel.
+3. Na área **Sua loja**, o proprietário configura telefone/WhatsApp, endereço, horários, fuso, taxa de entrega, pedido mínimo, prazo estimado, pagamentos e mensagem de fechamento; também controla abrir/fechar e iniciar uma pausa de uma hora.
+4. Em **Seu cardápio**, o proprietário pode cadastrar categorias, itens, preços, adicionais, promoções e disponibilidade. Imagens podem ser escolhidas da galeria local já incluída no projeto ou informadas por URL HTTPS. Não há upload para armazenamento externo configurado.
+5. Configure domínio, política de privacidade e termos da própria empresa. A aplicação não fornece aconselhamento jurídico nem publica uma política legal pronta. Antes de produção no Brasil, a empresa precisa revisar a LGPD, o aviso de privacidade e a base legal apropriada ao tratamento de dados de clientes.
+6. Substitua conteúdo demonstrativo, confirme horários/preços/endereço/entrega e faça pedidos reais de teste controlado antes de divulgar.
 
 O painel é acessado por uma rota privada aleatória centralizada em `client/src/const.ts`. **Não há link para a equipe no rodapé ou navegação pública.** O proprietário cria funcionários em **Sua equipe** e compartilha o endereço exato e as credenciais individualmente, por canal privado; não publique a URL em material destinado a clientes. O primeiro acesso com senha temporária exige que o funcionário escolha sua própria senha. O caminho aleatório reduz descoberta casual, mas não substitui login e autorização no servidor.
 
 ### Papéis
 
-| Perfil | Acesso |
-|---|---|
-| **Proprietário (`admin`)** | Pedidos, financeiro, cardápio, configurações da loja e criação/desativação/recuperação de funcionários. |
-| **Funcionário (`staff`)** | Pedidos, detalhes, edição operacional permitida, status, observações internas e impressão de comandas. Não acessa financeiro, catálogo, configurações da loja nem equipe. |
-| **Cliente (`user`/sem sessão)** | Loja pública, checkout e acompanhamento do pedido por identificador público. Não existe cadastro público de equipe. |
+| Perfil                          | Acesso                                                                                                                                                                                                                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Proprietário (`admin`)**      | Pedidos, edição dos dados/itens do cliente com confirmação, aviso manual pelo WhatsApp após editar, financeiro, cardápio, promoções, disponibilidade, abertura/pausa da loja e gestão de funcionários.                                                                               |
+| **Funcionário (`staff`)**       | Visualizar pedidos, avançar status, contatar o cliente via WhatsApp/telefone, acrescentar observações internas com identificação do autor e imprimir comandas internas. Não pode editar dados/itens de pedidos nem acessar financeiro, catálogo, configuração operacional ou equipe. |
+| **Cliente (`user`/sem sessão)** | Loja pública, checkout e acompanhamento do pedido por identificador público. Não existe cadastro público de equipe.                                                                                                                                                                  |
 
 As regras críticas são verificadas no servidor; ocultar uma tela não é a única barreira. O dono inicial é criado diretamente no servidor, nunca por cadastro aberto ou senha padrão.
+
+### Checkout, notas e impressão
+
+- Nome e sobrenome e telefone/WhatsApp são obrigatórios para todo pedido. Para entrega também é exigido CEP válido, além do endereço; o botão **Buscar endereço** consulta ViaCEP para preencher rua/bairro/cidade quando disponíveis. O preenchimento é uma ajuda: o cliente precisa conferir e completar o endereço, número e complemento.
+- O ponto de referência é opcional, com ajuda para o cliente fornecer informação útil ao entregador.
+- Observações internas são anexadas (não sobrescritas), identificadas pelo nome do usuário que as escreveu e visíveis apenas à equipe. Elas aparecem na **comanda interna/Epson**, nunca na nota de entrega para o cliente. A nota de entrega e a comanda Epson têm seletores de impressão separados.
+- Apenas o proprietário pode editar pedido/dados/itens. Antes de salvar há confirmação; depois abre o WhatsApp com uma mensagem pronta de atualização. O envio não é automático: o proprietário confere e toca em **Enviar** no WhatsApp.
+- A pausa de uma hora recusa novos pedidos temporariamente e expira automaticamente. Abrir/fechar e pausar são ações exclusivas do proprietário.
+- Uma promoção possui preço normal e preço promocional menor. O cliente vê o desconto e o backend salva o preço promocional no pedido; item esgotado pode ser marcado indisponível ou sua categoria pode ser ocultada. Estas alterações são exclusivas do proprietário.
 
 ## Criar o primeiro proprietário
 
@@ -119,9 +129,11 @@ Para criar e conectar um MySQL passo a passo, consulte [GUIA-MYSQL-VERCEL.md](./
 1. Importe o repositório privado `Khaleesisaithe/Delivery-demo` no time/conta corretos da Vercel (a integração GitHub precisa ter permissão sobre esse repositório). Use o projeto `delivery-demo` ou o projeto correspondente já existente, com a raiz na pasta do repositório.
 2. No projeto Vercel, configure `DATABASE_URL` com o MySQL **privado e dedicado a esta loja** e `DATABASE_SSL=true` em Production e Preview. Adicione `DATABASE_SSL_CA` (certificado PEM, se o provedor exigir CA própria) ou monte um arquivo e defina `DATABASE_SSL_CA_FILE`; use no máximo uma das opções. Nunca coloque segredos no Git ou em código `VITE_*`.
 3. Vercel injeta a URL da implantação; o app a usa se `APP_URL` não estiver definido. Se precisar fixar domínio, adicione a origem HTTPS canônica em `APP_URL`. Garanta que `LOCAL_DEV_AUTH` não seja ativado. Configure outros segredos da Cloud API do WhatsApp somente se for utilizar mensagens automáticas.
-4. A loja demonstrativa `Khaleesisaithe/Delivery-demo` executa `scripts/vercel-build.mjs` no build. Somente o deploy de produção desse repositório semeia o catálogo demonstrativo — e apenas quando ainda não há produtos — com hambúrgueres, combos, açaí, sucos, marmitex e imagens locais; nessa primeira carga, a loja é aberta para aceitar pedidos. Nenhum pedido fictício é criado. Previews e clones de clientes não executam essa carga automaticamente. O build de produção exige `DATABASE_URL` e usa TLS verificado (`DATABASE_SSL=true`).
+4. A loja demonstrativa `Khaleesisaithe/Delivery-demo` executa `scripts/vercel-build.mjs` no build. Somente o deploy de produção deste projeto aplica as migrations versionadas e semeia o catálogo demonstrativo — e apenas quando ainda não há produtos — com hambúrgueres, combos, açaí, sucos, marmitex e imagens locais; nessa primeira carga, a loja é aberta para aceitar pedidos. Nenhum pedido fictício é criado. Previews e clones de clientes não executam essa carga automaticamente. O build de produção exige `DATABASE_URL` e usa TLS verificado (`DATABASE_SSL=true`).
 5. Crie o primeiro proprietário uma única vez num terminal interativo seguro conectado **ao mesmo banco de produção**: `pnpm owner:create`. O comando solicita nome, e-mail e senha sem exibir a senha. O proprietário então abre a URL privada configurada em `client/src/const.ts`, entra, escolhe **Equipe**, informa nome/e-mail do funcionário e entrega a senha temporária por canal privado. O primeiro login exige a troca dessa senha. Não coloque credenciais em variável de build, comentário ou Git.
 6. O dono do projeto deve confirmar que o provedor MySQL permite conexões TLS vindas da Vercel e restringir acessos de rede conforme os recursos do plano/provedor. Valide a publicação com `/healthz`, login da equipe, pedido demonstrativo, acompanhamento e uma operação de status. Um build “READY” não comprova que o banco ou o fluxo de pedidos está operacional.
+
+Na rotina do painel: atendentes não alteram pedidos (itens, endereço ou cliente); eles podem avançar status, abrir WhatsApp/ligar e anexar notas internas com autoria. Só o proprietário altera pedido — exige confirmação e prepara uma mensagem de WhatsApp que precisa ser enviada manualmente. A nota de entrega omite notas internas; a comanda Epson interna pode incluí-las. O proprietário também controla abrir/fechar e pausa automática de 1 hora, cadastro de produto, preço de promoção, estoque e visibilidade de categoria. O checkout exige nome completo, WhatsApp e, para entrega, CEP; a consulta via ViaCEP é assistiva. Consulte **Checkout, notas e impressão** para detalhes.
 
 O primeiro deploy para Preview não deve receber credenciais reais de produção. Configure uma base Preview separada ou mantenha a publicação não operacional até conectar o banco apropriado. A rota privada pode ser descoberta; não há cadastro público, endpoints administrativos exigem sessão e perfil autorizado, senhas são armazenadas com scrypt, contas bloqueiam após tentativas inválidas e sessões usam cookie `HttpOnly`, `Secure` em HTTPS e `SameSite=Lax`. O limitador de tentativas por IP guarda estado em memória do processo Express; em serverless não é um contador global entre instâncias. O bloqueio de tentativas por conta é persistido no banco; para maior resistência a ataques distribuídos, habilite o Firewall/WAF do provedor e considere rate limit distribuído.
 

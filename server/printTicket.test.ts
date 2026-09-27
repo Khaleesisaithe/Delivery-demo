@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildServiceTicketHtml } from "../client/src/lib/printTicket";
+import { buildInternalKitchenTicketHtml, buildServiceTicketHtml } from "../client/src/lib/printTicket";
 
 const order = {
   orderNumber: "BP-1234",
@@ -50,5 +50,16 @@ describe("service ticket", () => {
     expect(html).toContain("Retirada na loja");
     expect(html).toContain("Grátis");
     expect(html).not.toContain("Troco para:");
+  });
+
+  it("keeps internal notes out of the customer ticket and includes authors on the kitchen ticket", () => {
+    const notes = [{ authorName: "Bruna Costa", note: "Conferir troco", createdAt: new Date("2026-09-25T17:15:00.000Z") }];
+    const customerHtml = buildServiceTicketHtml(order, customer, items);
+    const kitchenHtml = buildInternalKitchenTicketHtml(order, customer, items, notes);
+    expect(customerHtml).not.toContain("Conferir troco");
+    expect(customerHtml).not.toContain("Bruna Costa");
+    expect(kitchenHtml).toContain("USO INTERNO DA EQUIPE");
+    expect(kitchenHtml).toContain("Bruna Costa");
+    expect(kitchenHtml).toContain("Conferir troco");
   });
 });

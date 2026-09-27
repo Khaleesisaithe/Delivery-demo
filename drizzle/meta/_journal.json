@@ -36,6 +36,13 @@
       "when": 1790380392791,
       "tag": "0004_rainy_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1790467161978,
+      "tag": "0005_cheerful_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

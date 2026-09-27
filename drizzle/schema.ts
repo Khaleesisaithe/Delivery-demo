@@ -42,6 +42,8 @@ export const products = mysqlTable("products", {
   description: text("description"),
   imageUrl: text("imageUrl"),
   priceCents: int("priceCents").notNull(),
+  isPromotion: boolean("isPromotion").default(false).notNull(),
+  promotionPriceCents: int("promotionPriceCents"),
   isAvailable: boolean("isAvailable").default(true).notNull(),
   isFeatured: boolean("isFeatured").default(false).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -119,6 +121,14 @@ export const orderStatusHistory = mysqlTable("order_status_history", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [index("order_status_history_order_created_idx").on(table.orderId, table.createdAt)]);
 
+export const orderInternalNotes = mysqlTable("order_internal_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  authorName: varchar("authorName", { length: 160 }).notNull(),
+  note: varchar("note", { length: 500 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [index("order_internal_notes_order_created_idx").on(table.orderId, table.createdAt)]);
+
 export const storeSettings = mysqlTable("store_settings", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 140 }).default("Sua loja").notNull(),
@@ -134,6 +144,7 @@ export const storeSettings = mysqlTable("store_settings", {
   deliveryFeeCents: int("deliveryFeeCents").default(0).notNull(),
   minimumOrderCents: int("minimumOrderCents").default(0).notNull(),
   isOpen: boolean("isOpen").default(false).notNull(),
+  pauseUntil: timestamp("pauseUntil"),
   closedMessage: varchar("closedMessage", { length: 200 }).default("Voltamos às 18h.").notNull(),
   whatsappMessage: text("whatsappMessage"),
   paymentMethods: text("paymentMethods"),

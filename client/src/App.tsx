@@ -11,23 +11,36 @@ import Home from "./pages/Home";
 import { STORE_ACCESS_PATH } from "@/const";
 
 function Router() {
-  return <Switch>
-    <Route path="/" component={Home} />
-    <Route path="/pedido" component={TrackOrder} />
-    <Route path="/pedido/:publicId" component={TrackOrder} />
-    <Route path={STORE_ACCESS_PATH} component={StoreAccess} />
-    <Route path="/admin" component={Admin} />
+  return (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/pedido" component={TrackOrder} />
+      <Route path="/pedido/:publicId" component={TrackOrder} />
+      <Route path={STORE_ACCESS_PATH} component={StoreAccess} />
+      <Route path="/admin" component={Admin} />
       <Route path="/admin/financeiro" component={Admin} />
-    <Route path="/admin/cardapio" component={Admin} />
-    <Route path="/admin/loja" component={Admin} />
-    <Route path="/admin/equipe" component={Admin} />
-    <Route path="/404" component={NotFound} />
-    <Route component={NotFound} />
-  </Switch>;
+      <Route path="/admin/cardapio" component={Admin} />
+      <Route path="/admin/loja" component={Admin} />
+      <Route path="/admin/equipe" component={Admin} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
 }
 
 function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light"><TooltipProvider><Toaster /><Router /><div id="service-ticket" /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+          <div id="service-ticket" />
+          <div id="internal-ticket" />
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
 }
 
 export default App;

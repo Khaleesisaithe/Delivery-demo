@@ -355,17 +355,17 @@ a { color:inherit; text-decoration:none; }
 
 
 /* Nota de serviço para impressoras térmicas e folhas comuns */
-#service-ticket { position:absolute; left:-99999px; top:0; width:290px; box-sizing:border-box; padding:10px; background:#fff; color:#000; font:11px/1.5 "Courier New",monospace; }
-#service-ticket hr { border:0; border-top:1px dashed #000; margin:6px 0; }
-#service-ticket .st-row { display:flex; justify-content:space-between; gap:8px; }
-#service-ticket .st-row>span:last-child { white-space:nowrap; }
-#service-ticket .st-sub { padding-left:10px; font-size:9.5px; overflow-wrap:anywhere; }
+#service-ticket,#internal-ticket { position:absolute; left:-99999px; top:0; width:290px; box-sizing:border-box; padding:10px; background:#fff; color:#000; font:11px/1.5 "Courier New",monospace; }
+#service-ticket hr,#internal-ticket hr { border:0; border-top:1px dashed #000; margin:6px 0; }
+#service-ticket .st-row,#internal-ticket .st-row { display:flex; justify-content:space-between; gap:8px; }
+#service-ticket .st-row>span:last-child,#internal-ticket .st-row>span:last-child { white-space:nowrap; }
+#service-ticket .st-sub,#internal-ticket .st-sub { padding-left:10px; font-size:9.5px; overflow-wrap:anywhere; }
 @media print {
   @page { margin:3mm; }
   body { margin:0 !important; background:#fff !important; }
   body * { visibility:hidden !important; }
-  #service-ticket, #service-ticket * { visibility:visible !important; }
-  #service-ticket { position:fixed !important; left:0 !important; top:0 !important; width:72mm !important; padding:0 !important; }
+  body[data-ticket-print="service"] #service-ticket, body[data-ticket-print="service"] #service-ticket *, body[data-ticket-print="internal"] #internal-ticket, body[data-ticket-print="internal"] #internal-ticket * { visibility:visible !important; }
+  body[data-ticket-print="service"] #service-ticket, body[data-ticket-print="internal"] #internal-ticket { position:fixed !important; left:0 !important; top:0 !important; width:72mm !important; padding:0 !important; }
 }
 
 
@@ -499,3 +499,59 @@ a { color:inherit; text-decoration:none; }
 .store-access-role-grid b { color:#47382d; font-size:10px; }
 .store-access-role-grid small { color:#847a71; font-size:9px; line-height:1.45; }
 @media(max-width:430px) { .store-access-role-grid { grid-template-columns:1fr; } }
+
+
+/* Owner operations and order tools */
+.store-operations { display:grid; gap:12px; padding:16px; border:1px solid rgba(57,104,77,.14); border-radius:14px; background:#f7faf5; }
+.store-operations>div:first-child { display:flex; align-items:center; gap:10px; }
+.store-operations>div:first-child>div { display:grid; gap:3px; }
+.store-operations>div:first-child b { color:#2e4434; font-size:14px; }
+.store-operations>div:first-child small,.store-operations>small { color:#718071; font-size:10px; line-height:1.5; }
+.store-live-indicator { width:11px; height:11px; flex:none; border-radius:50%; background:#a59b8f; box-shadow:0 0 0 5px rgba(118,107,91,.1); }
+.store-live-indicator.is-open { background:#29884c; box-shadow:0 0 0 5px rgba(41,136,76,.13); }
+.store-operation-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.store-operation-actions button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; }
+.store-pause-expiry { padding:9px 10px; border-radius:8px; color:#744716 !important; background:#fff1dc; }
+.admin-toolbar { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:12px; }
+.admin-store-quick-control { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:7px 9px; border:1px solid var(--bp-line); border-radius:12px; background:#fffdf9; box-shadow:0 6px 18px rgba(65,45,30,.05); }
+.admin-store-quick-control b { color:#4b3b30; font-size:11px; }
+.admin-store-quick-control button { display:inline-flex; align-items:center; gap:5px; min-height:32px; padding:0 9px; font-size:10px; }
+.admin-topline { align-items:center; }
+.customer-contact-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:5px; }
+.customer-contact-actions a,.whatsapp-followup { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:35px; padding:7px 10px; border:1px solid rgba(101,58,39,.14); border-radius:9px; color:#604737; background:#fffdfa; font-size:11px; font-weight:700; text-decoration:none; }
+.customer-contact-actions a:first-child,.whatsapp-followup { border-color:rgba(41,136,76,.16); color:#236e41; background:#f1f8f1; }
+.staff-readonly-note { margin:12px 0; padding:12px 14px; border:1px solid #e7dece; border-radius:10px; color:#6c6258; background:#faf7f1; font-size:11px; line-height:1.6; }
+.internal-note-list { display:grid; gap:9px; padding:13px; border:1px solid #e9e0d4; border-radius:12px; background:#fcfaf6; }
+.internal-note-list h3 { display:grid; gap:3px; margin:0 0 2px; color:#40342a; font-size:12px; }
+.internal-note-list h3 small { color:#8a7b6f; font-size:9px; font-weight:500; }
+.internal-note-list article { display:grid; gap:6px; padding:10px; border-radius:9px; background:#fff; box-shadow:0 1px 5px rgba(65,45,30,.05); }
+.internal-note-list article>div { display:flex; justify-content:space-between; gap:8px; }
+.internal-note-list article b { color:#57402f; font-size:10px; }
+.internal-note-list article time { color:#958a7c; font-size:9px; }
+.internal-note-list article p,.empty-internal-notes { margin:0; color:#504941; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+.promotion-editor { display:grid; gap:10px; padding:13px; border:1px solid #f0d7a9; border-radius:11px; background:#fffaf0; }
+.promotion-editor label:not(.checkbox-line) { display:grid; gap:5px; color:#684919; font-size:11px; font-weight:700; }
+.promotion-editor input:not([type=checkbox]) { min-height:38px; padding:8px 10px; border:1px solid #e9d8b5; border-radius:8px; background:#fff; }
+.promotion-editor small { color:#8b795c; font-size:10px; font-weight:400; }
+.checkbox-line { display:flex; align-items:center; gap:8px; color:#704d17; font-size:11px; font-weight:750; }
+.product-promo-price { display:grid; gap:2px; color:#b52b22; text-align:right; }
+.product-promo-price del,.customer-promo-price del { color:#92877d; font-size:.75em; font-weight:500; }
+.customer-promo-price { display:inline-flex; flex-direction:column; align-items:flex-start; gap:2px; color:#b5231b !important; }
+.promo-tag,.promo-badge { background:#bc2c20 !important; }
+.promo-badge { top:auto !important; right:6px; bottom:6px; left:auto !important; max-width:calc(100% - 12px); font-size:8px !important; }
+.promo-kicker { display:block; margin-bottom:4px; color:#b5462c; font-size:9px; font-weight:800; letter-spacing:.11em; }
+.promo-price-stack { display:grid; gap:2px; color:#b5231b; font-size:16px; font-weight:850; }
+.promo-price-stack del { color:#8d8378; font-size:11px; font-weight:500; }
+.daily-promotions { padding:22px; border:1px solid #f0dfc1; border-radius:20px; background:linear-gradient(145deg,#fff9eb,#fffdf8 70%); }
+.daily-promotions .app-section-heading { margin-bottom:14px; }
+.daily-promotions .popular-photo { min-height:145px; }
+.daily-promotions .popular-info { display:grid; gap:6px; }
+.daily-promotions .popular-info>p { margin:0; color:#73685d; font-size:11px; line-height:1.45; }
+.cep-input-row { display:flex; gap:7px; }
+.cep-input-row input { min-width:0; flex:1; }
+.cep-input-row button { display:inline-flex; flex:none; align-items:center; justify-content:center; gap:6px; padding:0 11px; border:1px solid #ead7c6; border-radius:9px; color:#7b452e; background:#fff8f1; font:inherit; font-size:10px; font-weight:750; cursor:pointer; }
+.cep-input-row button:disabled { opacity:.5; cursor:not-allowed; }
+.address-grid>label>small { color:#81766e; font-size:9px; font-weight:400; line-height:1.45; }
+.product-image-preview { width:100%; max-height:190px; object-fit:cover; border:1px solid var(--bp-line); border-radius:10px; }
+@media(max-width:700px) { .admin-toolbar { align-items:stretch; flex-direction:column; }.admin-store-quick-control { justify-content:flex-start; }.daily-promotions { padding:14px; border-radius:15px; }.daily-promotions .popular-photo { min-height:112px; } }
+@media(max-width:520px) { .store-operation-actions { display:grid; grid-template-columns:1fr; }.customer-contact-actions a { flex:1; }.cep-input-row { align-items:stretch; flex-direction:column; }.cep-input-row button { min-height:38px; }.internal-note-list article>div { flex-direction:column; gap:3px; } }
