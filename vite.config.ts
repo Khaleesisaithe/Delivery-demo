@@ -17,7 +17,10 @@ export default defineConfig({
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "public"),
-    emptyOutDir: true,
+    // Vercel's Express builder can snapshot the committed HTML asset paths
+    // before this command replaces the content-hashed Vite bundle filenames.
+    // Keep those original files available while the deployment is packaged.
+    emptyOutDir: false,
   },
   server: {
     host: "127.0.0.1",
