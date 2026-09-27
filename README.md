@@ -160,6 +160,13 @@ pnpm owner:create        # criar/configurar proprietário em terminal interativo
 
 Após alterar `drizzle/schema.ts`, gere e revise a migration SQL antes de aplicá-la; nunca substitua o banco do cliente por uma cópia da demo. Adicione testes para alterações de regras financeiras, papéis, autenticação e pedidos.
 
+### Entregadores e saída para entrega
+
+- O proprietário cadastra entregadores em **Painel → Equipe** usando nome e telefone com DDD; não é criada conta de login para o entregador.
+- O proprietário pode desativar/reativar um cadastro. Desativar preserva referências e histórico, remove o entregador das novas atribuições e é impedido enquanto existirem pedidos prontos/em rota associados a ele.
+- Funcionários não gerenciam a lista. Em pedidos de entrega com status **Pronto**, o proprietário ou atendente atribui um entregador ativo. A alteração fica registrada no histórico.
+- O pedido não pode avançar para **Saiu para entrega** sem entregador ativo. Pedidos de retirada seguem o fluxo normal e não recebem entregador.
+
 ## Segurança e limitações conhecidas
 
 - Produção exige domínio HTTPS e TLS de banco verificado; use senhas fortes, cofre de segredos, backup e atualização do sistema operacional/runtime.

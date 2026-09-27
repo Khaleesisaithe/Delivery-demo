@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   categories,
   customers,
+  deliveryCouriers,
   orderInternalNotes,
   orderItemOptions,
   orderItems,
@@ -26,7 +27,11 @@ import {
   businessDayBounds,
   businessDayRange,
 } from "./businessDay.js";
-import { canTransitionOrder } from "./workflow.js";
+import {
+  canAssignCourier,
+  canDispatchDelivery,
+  canTransitionOrder,
+} from "./workflow.js";
 import {
   canEditCustomerOrder,
   recalculateEditedSubtotal,
@@ -436,9 +441,18 @@ export const ordersRouter = router({
     .query(async ({ input }) => {
       const db = await requireDb();
       const query = db
-        .select({ order: orders, customer: customers })
+        .select({
+          order: orders,
+          customer: customers,
+          courier: {
+            id: deliveryCouriers.id,
+            name: deliveryCouriers.name,
+            isActive: deliveryCouriers.isActive,
+          },
+        })
         .from(orders)
-        .innerJoin(customers, eq(orders.customerId, customers.id));
+        .innerJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(deliveryCouriers, eq(orders.courierId, deliveryCouriers.id));
       const rows = input?.status
         ? await query
             .where(eq(orders.status, input.status))
@@ -452,9 +466,19 @@ export const ordersRouter = router({
     .query(async ({ input }) => {
       const db = await requireDb();
       const [row] = await db
-        .select({ order: orders, customer: customers })
+        .select({
+          order: orders,
+          customer: customers,
+          courier: {
+            id: deliveryCouriers.id,
+            name: deliveryCouriers.name,
+            phone: deliveryCouriers.phone,
+            isActive: deliveryCouriers.isActive,
+          },
+        })
         .from(orders)
         .innerJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(deliveryCouriers, eq(orders.courierId, deliveryCouriers.id))
         .where(eq(orders.id, input.id))
         .limit(1);
       if (!row)
@@ -520,11 +544,39 @@ export const ordersRouter = router({
           });
         if (current.status === input.status)
           return { changed: false, order: current };
+        if (
+          input.status === "out_for_delivery" &&
+          current.deliveryType !== "delivery"
+        )
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Pedidos de retirada não podem ser enviados para entrega.",
+          });
         if (!canTransitionOrder(current.status, input.status))
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: "Essa mudança de status não é permitida para o pedido.",
           });
+        if (
+          input.status === "out_for_delivery" &&
+          current.status !== "out_for_delivery"
+        ) {
+          let hasActiveCourier = false;
+          if (current.courierId) {
+            const [courier] = await tx
+              .select({ isActive: deliveryCouriers.isActive })
+              .from(deliveryCouriers)
+              .where(eq(deliveryCouriers.id, current.courierId))
+              .limit(1);
+            hasActiveCourier = Boolean(courier?.isActive);
+          }
+          if (!canDispatchDelivery(current.deliveryType, hasActiveCourier))
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message:
+                "Atribua um entregador ativo antes de marcar o pedido como saiu para entrega.",
+            });
+        }
         const deliveredAt =
           input.status === "delivered" ? new Date() : current.deliveredAt;
         await tx
@@ -554,6 +606,78 @@ export const ordersRouter = router({
           )
         : { delivered: false };
       return { success: true, whatsappDelivered: messageResult.delivered };
+    }),
+  assignCourier: staffProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        courierId: z.number().int().positive().nullable(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      return db.transaction(async tx => {
+        let courierName: string | null = null;
+        if (input.courierId !== null) {
+          const [courier] = await tx
+            .select({ id: deliveryCouriers.id, name: deliveryCouriers.name })
+            .from(deliveryCouriers)
+            .where(
+              and(
+                eq(deliveryCouriers.id, input.courierId),
+                eq(deliveryCouriers.isActive, true)
+              )
+            )
+            .limit(1)
+            .for("update");
+          if (!courier)
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Entregador ativo não encontrado.",
+            });
+          courierName = courier.name;
+        }
+        const [current] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.id))
+          .for("update")
+          .limit(1);
+        if (!current)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pedido não encontrado.",
+          });
+        if (!canAssignCourier(current.status, current.deliveryType))
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Entregadores só podem ser atribuídos a pedidos de entrega prontos ou em rota.",
+          });
+        if (input.courierId === null && current.status !== "ready")
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Um pedido em rota precisa permanecer atribuído a um entregador.",
+          });
+
+        await tx
+          .update(orders)
+          .set({
+            courierId: input.courierId,
+            courierAssignedAt: input.courierId ? new Date() : null,
+          })
+          .where(eq(orders.id, input.id));
+        await tx.insert(orderStatusHistory).values({
+          orderId: input.id,
+          status: current.status,
+          note: input.courierId
+            ? `Entregador atribuído: ${courierName}`
+            : "Entregador removido do pedido",
+          changedBy: ctx.user.name || "Equipe da loja",
+        });
+        return { success: true as const };
+      });
     }),
   adminEdit: ownerEditProcedure
     .input(

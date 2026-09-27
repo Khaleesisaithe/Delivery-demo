@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   ArrowRight,
+  Bike,
   Check,
   ChefHat,
   ChevronDown,
@@ -169,6 +170,19 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
   const teamQuery = trpc.delivery.team.list.useQuery(undefined, {
     enabled: isTeam,
   });
+  const courierRosterQuery = trpc.delivery.couriers.adminList.useQuery(
+    undefined,
+    {
+      enabled: isTeam,
+    }
+  );
+  const activeCouriersQuery = trpc.delivery.couriers.activeList.useQuery(
+    undefined,
+    {
+      enabled: location === "/admin" || isTeam,
+      refetchInterval: 30000,
+    }
+  );
   const createStaff = trpc.delivery.team.createStaff.useMutation({
     onSuccess: async result => {
       await utils.delivery.team.list.invalidate();
@@ -191,6 +205,39 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
     onSuccess: result => {
       setTemporaryPassword(result.temporaryPassword);
       toast.success("Nova senha temporária criada.");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const createCourier = trpc.delivery.couriers.create.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.delivery.couriers.adminList.invalidate(),
+        utils.delivery.couriers.activeList.invalidate(),
+      ]);
+      setCourierDraft({ name: "", phone: "" });
+      toast.success("Entregador cadastrado e disponível para atribuição.");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const setCourierActive = trpc.delivery.couriers.setActive.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.delivery.couriers.adminList.invalidate(),
+        utils.delivery.couriers.activeList.invalidate(),
+        utils.delivery.orders.adminList.invalidate(),
+        utils.delivery.orders.adminDetail.invalidate(),
+      ]);
+      toast.success("Disponibilidade do entregador atualizada.");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const assignCourier = trpc.delivery.orders.assignCourier.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.delivery.orders.adminList.invalidate(),
+        utils.delivery.orders.adminDetail.invalidate(),
+      ]);
+      toast.success("Entregador atribuído ao pedido.");
     },
     onError: error => toast.error(error.message),
   });
@@ -368,6 +415,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
     closedMessage: "",
   });
   const [employeeDraft, setEmployeeDraft] = useState({ name: "", email: "" });
+  const [courierDraft, setCourierDraft] = useState({ name: "", phone: "" });
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [settingsHydrated, setSettingsHydrated] = useState(false);
   const data = catalog.data;
@@ -1483,10 +1531,11 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
           <div className="admin-section-heading">
             <div>
               <span className="eyebrow">PERMISSÕES</span>
-              <h2>Dono e funcionários</h2>
+              <h2>Sua equipe</h2>
               <p>
-                O proprietário controla catálogo, configurações, financeiro e
-                acessos. Funcionários acessam apenas a operação de pedidos.
+                O proprietário gerencia acessos e entregadores. Funcionários não
+                editam pedidos: eles acompanham a operação e atribuem pedidos
+                prontos a entregadores ativos.
               </p>
             </div>
           </div>
@@ -1636,6 +1685,111 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                   </p>
                 )}
           </div>
+          <div className="team-invite-card courier-invite-card">
+            <div>
+              <span className="eyebrow">NOVO ENTREGADOR / MOTOBOY</span>
+              <p>
+                Cadastre nome e telefone para que a equipe possa atribuir
+                pedidos de entrega prontos. O entregador não recebe acesso ao
+                painel.
+              </p>
+              <form
+                className="courier-create-form"
+                onSubmit={event => {
+                  event.preventDefault();
+                  createCourier.mutate(courierDraft);
+                }}
+              >
+                <input
+                  required
+                  minLength={2}
+                  maxLength={140}
+                  placeholder="Nome do entregador"
+                  value={courierDraft.name}
+                  onChange={event =>
+                    setCourierDraft({
+                      ...courierDraft,
+                      name: event.target.value,
+                    })
+                  }
+                />
+                <input
+                  required
+                  type="tel"
+                  maxLength={32}
+                  autoComplete="tel"
+                  placeholder="WhatsApp / telefone com DDD"
+                  value={courierDraft.phone}
+                  onChange={event =>
+                    setCourierDraft({
+                      ...courierDraft,
+                      phone: event.target.value,
+                    })
+                  }
+                />
+                <button
+                  className="primary-button"
+                  disabled={createCourier.isPending}
+                >
+                  <Plus size={15} /> Cadastrar entregador
+                </button>
+              </form>
+            </div>
+          </div>
+          <div className="team-user-list courier-roster">
+            <div className="admin-card-heading">
+              <div>
+                <span className="eyebrow">MOTOBOYS CADASTRADOS</span>
+                <h3>Entregadores</h3>
+              </div>
+              <Bike size={19} />
+            </div>
+            {courierRosterQuery.isLoading && (
+              <div className="admin-loading">
+                <LoaderCircle className="spin" /> Carregando entregadores…
+              </div>
+            )}
+            {courierRosterQuery.data?.length
+              ? courierRosterQuery.data.map(courier => (
+                  <article className="team-user-row" key={courier.id}>
+                    <div className="team-user-avatar courier-avatar">
+                      <Bike size={17} />
+                    </div>
+                    <div className="team-user-info">
+                      <b>
+                        {courier.name}
+                        {!courier.isActive && " · desativado"}
+                      </b>
+                      <small>{courier.phone}</small>
+                      <small>
+                        {courier.isActive
+                          ? "Disponível para atribuição"
+                          : "Mantido no histórico; não aparece para novos pedidos"}
+                      </small>
+                    </div>
+                    <div className="team-role-control">
+                      <button
+                        className="outline-button"
+                        disabled={setCourierActive.isPending}
+                        onClick={() =>
+                          setCourierActive.mutate({
+                            id: courier.id,
+                            isActive: !courier.isActive,
+                          })
+                        }
+                      >
+                        {courier.isActive ? "Desativar" : "Reativar"}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              : !courierRosterQuery.isLoading && (
+                  <p className="team-empty">
+                    Nenhum entregador cadastrado. Adicione o primeiro entregador
+                    acima.
+                  </p>
+                )}
+          </div>
         </section>
       ) : (
         <section className="admin-content">
@@ -1706,71 +1860,124 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                   <b>{grouped[stage.key]?.length ?? 0}</b>
                 </div>
                 <div className="kanban-stack">
-                  {(grouped[stage.key] ?? []).map(({ order, customer }) => (
-                    <article className="order-card" key={order.id}>
-                      <div className="order-card-head">
-                        <b>#{order.orderNumber}</b>
-                        <small>
-                          {new Date(order.createdAt).toLocaleTimeString(
-                            "pt-BR",
-                            { hour: "2-digit", minute: "2-digit" }
+                  {(grouped[stage.key] ?? []).map(
+                    ({ order, customer, courier }) => (
+                      <article className="order-card" key={order.id}>
+                        <div className="order-card-head">
+                          <b>#{order.orderNumber}</b>
+                          <small>
+                            {new Date(order.createdAt).toLocaleTimeString(
+                              "pt-BR",
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
+                          </small>
+                        </div>
+                        <h3>{customer.name}</h3>
+                        <p>
+                          {order.deliveryType === "pickup"
+                            ? "Retirada"
+                            : "Entrega"}{" "}
+                          · {paymentNames[order.paymentMethod]}
+                        </p>
+                        <div className="order-card-total">
+                          <strong>{formatBRL(order.totalCents)}</strong>
+                          <span>
+                            {order.streetNumber
+                              ? `Nº ${order.streetNumber}`
+                              : ""}
+                          </span>
+                        </div>
+                        {order.deliveryType === "delivery" &&
+                          (order.status === "ready" ||
+                            order.status === "out_for_delivery") && (
+                            <label className="courier-assignment">
+                              <Bike size={15} />
+                              <span>
+                                {courier?.name
+                                  ? `Entregador: ${courier.name}`
+                                  : "Atribuir entregador"}
+                              </span>
+                              <select
+                                aria-label={`Entregador do pedido ${order.orderNumber}`}
+                                value={courier?.id ?? ""}
+                                disabled={
+                                  assignCourier.isPending ||
+                                  !activeCouriersQuery.data?.length
+                                }
+                                onChange={event =>
+                                  assignCourier.mutate({
+                                    id: order.id,
+                                    courierId: event.target.value
+                                      ? Number(event.target.value)
+                                      : null,
+                                  })
+                                }
+                              >
+                                {order.status === "ready" && (
+                                  <option value="">Sem entregador</option>
+                                )}
+                                {activeCouriersQuery.data?.map(courier => (
+                                  <option key={courier.id} value={courier.id}>
+                                    {courier.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
                           )}
-                        </small>
-                      </div>
-                      <h3>{customer.name}</h3>
-                      <p>
-                        {order.deliveryType === "pickup"
-                          ? "Retirada"
-                          : "Entrega"}{" "}
-                        · {paymentNames[order.paymentMethod]}
-                      </p>
-                      <div className="order-card-total">
-                        <strong>{formatBRL(order.totalCents)}</strong>
-                        <span>
-                          {order.streetNumber ? `Nº ${order.streetNumber}` : ""}
-                        </span>
-                      </div>
-                      <div className="order-card-actions">
-                        <button
-                          className="order-open"
-                          onClick={() => setSelectedOrderId(order.id)}
-                        >
-                          <Eye size={14} /> Abrir
-                        </button>
-                        {stage.next && (
+                        <div className="order-card-actions">
                           <button
-                            className="advance-order"
-                            onClick={() =>
-                              advanceOrder(
-                                order.id,
-                                stage.key === "ready" &&
-                                  order.deliveryType === "pickup"
-                                  ? "delivered"
-                                  : stage.next!
-                              )
-                            }
-                            title={`Avançar: ${statusNames[stage.key === "ready" && order.deliveryType === "pickup" ? "delivered" : stage.next]}`}
+                            className="order-open"
+                            onClick={() => setSelectedOrderId(order.id)}
                           >
-                            <span>
-                              {stage.key === "ready" &&
-                              order.deliveryType === "pickup"
-                                ? "Entregue"
-                                : stage.next === "confirmed"
-                                  ? "Confirmar"
-                                  : stage.next === "preparing"
-                                    ? "Preparar"
-                                    : stage.next === "ready"
-                                      ? "Marcar pronto"
-                                      : stage.next === "out_for_delivery"
-                                        ? "Saiu"
-                                        : "Entregue"}
-                            </span>
-                            <ArrowRight size={14} />
+                            <Eye size={14} /> Abrir
                           </button>
-                        )}
-                      </div>
-                    </article>
-                  ))}
+                          {stage.next && (
+                            <button
+                              className="advance-order"
+                              disabled={
+                                statusMutation.isPending ||
+                                (stage.key === "ready" &&
+                                  order.deliveryType === "delivery" &&
+                                  !courier?.isActive)
+                              }
+                              onClick={() =>
+                                advanceOrder(
+                                  order.id,
+                                  stage.key === "ready" &&
+                                    order.deliveryType === "pickup"
+                                    ? "delivered"
+                                    : stage.next!
+                                )
+                              }
+                              title={
+                                stage.key === "ready" &&
+                                order.deliveryType === "delivery" &&
+                                !courier?.isActive
+                                  ? "Atribua um entregador antes de despachar"
+                                  : `Avançar: ${statusNames[stage.key === "ready" && order.deliveryType === "pickup" ? "delivered" : stage.next]}`
+                              }
+                            >
+                              <span>
+                                {stage.key === "ready" &&
+                                order.deliveryType === "pickup"
+                                  ? "Entregue"
+                                  : stage.next === "confirmed"
+                                    ? "Confirmar"
+                                    : stage.next === "preparing"
+                                      ? "Preparar"
+                                      : stage.next === "ready"
+                                        ? "Marcar pronto"
+                                        : stage.next === "out_for_delivery"
+                                          ? "Saiu"
+                                          : "Entregue"}
+                              </span>
+                              <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    )
+                  )}
                 </div>
                 {!grouped[stage.key]?.length && (
                   <div className="kanban-empty">Sem pedidos</div>
@@ -1842,6 +2049,53 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
               </div>
             ) : (
               <div className="order-detail-scroll">
+                {detail.data.order.deliveryType === "delivery" &&
+                  (detail.data.order.status === "ready" ||
+                    detail.data.order.status === "out_for_delivery") && (
+                    <section className="courier-detail-assignment">
+                      <div>
+                        <span className="eyebrow">ENTREGA</span>
+                        <h3>
+                          {detail.data.courier?.name
+                            ? `Com ${detail.data.courier.name}`
+                            : "Aguardando entregador"}
+                        </h3>
+                        <small>
+                          {detail.data.courier?.phone
+                            ? `Contato do entregador: ${detail.data.courier.phone}`
+                            : "Atribua um entregador ativo para liberar a saída."}
+                        </small>
+                      </div>
+                      <label>
+                        <Bike size={16} />
+                        <select
+                          aria-label="Atribuir entregador ao pedido"
+                          value={detail.data.courier?.id ?? ""}
+                          disabled={
+                            assignCourier.isPending ||
+                            !activeCouriersQuery.data?.length
+                          }
+                          onChange={event =>
+                            assignCourier.mutate({
+                              id: detail.data.order.id,
+                              courierId: event.target.value
+                                ? Number(event.target.value)
+                                : null,
+                            })
+                          }
+                        >
+                          {detail.data.order.status === "ready" && (
+                            <option value="">Sem entregador</option>
+                          )}
+                          {activeCouriersQuery.data?.map(courier => (
+                            <option key={courier.id} value={courier.id}>
+                              {courier.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </section>
+                  )}
                 <div className="order-customer-block">
                   <b>{detail.data.customer.name}</b>
                   <span>{detail.data.customer.phone}</span>
@@ -2108,10 +2362,9 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                 )}
                 {!isOwner && (
                   <p className="staff-readonly-note">
-                    O perfil de atendente pode acompanhar o pedido, avançar o
-                    status, falar com o cliente e registrar observações
-                    internas. Somente o proprietário pode alterar dados ou
-                    itens.
+                    O atendente acompanha o pedido, atualiza status, registra
+                    observações internas e atribui entregadores. Somente o
+                    proprietário pode alterar os dados do cliente ou os itens.
                   </p>
                 )}
                 <div className="detail-item-list">
@@ -2221,6 +2474,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                     <div key={item.id}>
                       <span className="history-dot" />
                       <b>{statusNames[item.status as Status] || item.status}</b>
+                      {item.note && <small>{item.note}</small>}
                       <small>
                         {new Date(item.createdAt).toLocaleString("pt-BR", {
                           dateStyle: "short",
@@ -2240,16 +2494,35 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                     )?.next && (
                       <button
                         className="primary-button"
+                        disabled={
+                          statusMutation.isPending ||
+                          (detail.data.order.status === "ready" &&
+                            detail.data.order.deliveryType === "delivery" &&
+                            !detail.data.courier?.isActive)
+                        }
                         onClick={() =>
                           advanceOrder(
                             selectedOrderId,
-                            stages.find(
-                              stage => stage.key === detail.data?.order.status
-                            )!.next!
+                            detail.data.order.status === "ready" &&
+                              detail.data.order.deliveryType === "pickup"
+                              ? "delivered"
+                              : stages.find(
+                                  stage =>
+                                    stage.key === detail.data?.order.status
+                                )!.next!
                           )
                         }
                       >
-                        {`Avançar: ${statusNames[stages.find(stage => stage.key === detail.data?.order.status)!.next!]}`}{" "}
+                        {"Avançar: " +
+                          statusNames[
+                            detail.data.order.status === "ready" &&
+                            detail.data.order.deliveryType === "pickup"
+                              ? "delivered"
+                              : stages.find(
+                                  stage =>
+                                    stage.key === detail.data?.order.status
+                                )!.next!
+                          ]}{" "}
                         <ArrowRight size={16} />
                       </button>
                     )}
