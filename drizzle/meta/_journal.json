@@ -43,6 +43,13 @@
       "when": 1790467161978,
       "tag": "0005_cheerful_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1790470565886,
+      "tag": "0006_demo_daily_promotions",
+      "breakpoints": true
     }
   ]
 }
