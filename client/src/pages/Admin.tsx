@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   ArrowRight,
+  Archive,
   Bike,
   Check,
   ChefHat,
@@ -12,6 +13,7 @@ import {
   Clock3,
   Eye,
   Flame,
+  GripVertical,
   LoaderCircle,
   MessageCircle,
   Pause,
@@ -159,10 +161,16 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
     { days: salesDays },
     { enabled: isOwner }
   );
-  const orderQuery = trpc.delivery.orders.adminList.useQuery(undefined, {
-    refetchInterval: 6000,
-    refetchOnWindowFocus: true,
-  });
+  const [ordersView, setOrdersView] = useState<"active" | "history">("active");
+  const [historyPage, setHistoryPage] = useState(0);
+  const [dropTarget, setDropTarget] = useState<Status | null>(null);
+  const orderQuery = trpc.delivery.orders.adminList.useQuery(
+    { view: ordersView, page: ordersView === "history" ? historyPage : 0 },
+    {
+      refetchInterval: ordersView === "active" ? 6000 : 30000,
+      refetchOnWindowFocus: true,
+    }
+  );
   const catalog = trpc.delivery.catalog.adminData.useQuery(undefined, {
     enabled: isOwner,
   });
@@ -423,7 +431,8 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
     data?.store?.pauseUntil &&
       new Date(data.store.pauseUntil).getTime() > Date.now()
   );
-  const orders = orderQuery.data ?? [];
+  const orders = orderQuery.data?.items ?? [];
+  const historyHasMore = orderQuery.data?.hasMore ?? false;
   const isMenu = isOwner && location === "/admin/cardapio";
   const isFinance = isOwner && location === "/admin/financeiro";
   const isStore = isOwner && location === "/admin/loja";
@@ -511,6 +520,31 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
 
   function advanceOrder(id: number, status: Status) {
     statusMutation.mutate({ id, status });
+  }
+  function handleOrderDrop(event: React.DragEvent<HTMLElement>, target: Status) {
+    event.preventDefault();
+    setDropTarget(null);
+    const orderId = Number(event.dataTransfer.getData("text/plain"));
+    const row = orders.find(item => item.order.id === orderId);
+    if (!row || row.order.status === target) return;
+    const currentStage = stages.find(stage => stage.key === row.order.status);
+    const nextStatus =
+      row.order.status === "ready" && row.order.deliveryType === "pickup"
+        ? "delivered"
+        : currentStage?.next;
+    if (
+      !nextStatus ||
+      target !== nextStatus ||
+      (target === "out_for_delivery" && row.order.deliveryType !== "delivery")
+    ) {
+      toast.error("Esse pedido não pode avançar para essa etapa.");
+      return;
+    }
+    if (target === "out_for_delivery" && !row.courier?.isActive) {
+      toast.error("Atribua um entregador ativo antes de despachar o pedido.");
+      return;
+    }
+    advanceOrder(orderId, target);
   }
   function saveOrderEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1793,7 +1827,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
         </section>
       ) : (
         <section className="admin-content">
-          {isOwner && (
+          {isOwner && ordersView === "active" && (
             <div className="stats-grid">
               <article className="stat-card">
                 <span className="stat-icon amber">
@@ -1834,13 +1868,36 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
           )}
           <div className="orders-toolbar">
             <div>
-              <span className="eyebrow">ACOMPANHAMENTO AO VIVO</span>
-              <h2>Pedidos da loja</h2>
+              <span className="eyebrow">
+                {ordersView === "active" ? "ACOMPANHAMENTO AO VIVO" : "CONSULTA DE PEDIDOS"}
+              </span>
+              <h2>{ordersView === "active" ? "Pedidos da loja" : "Histórico de pedidos"}</h2>
             </div>
             <div className="toolbar-actions">
-              <span className="refresh-tag">
-                <i /> Atualiza a cada 6s
-              </span>
+              <div className="orders-view-tabs" aria-label="Visualização dos pedidos">
+                <button
+                  className="outline-button"
+                  aria-pressed={ordersView === "active"}
+                  onClick={() => setOrdersView("active")}
+                >
+                  <ShoppingBag size={15} /> Em andamento
+                </button>
+                <button
+                  className="outline-button"
+                  aria-pressed={ordersView === "history"}
+                  onClick={() => {
+                    setHistoryPage(0);
+                    setOrdersView("history");
+                  }}
+                >
+                  <Archive size={15} /> Histórico
+                </button>
+              </div>
+              {ordersView === "active" && (
+                <span className="refresh-tag">
+                  <i /> Atualiza a cada 6s
+                </span>
+              )}
               <button
                 className="outline-button"
                 onClick={() => {
@@ -1852,9 +1909,85 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
               </button>
             </div>
           </div>
+          {ordersView === "history" ? (
+            orderQuery.isLoading ? (
+              <div className="admin-loading">
+                <LoaderCircle className="spin" /> Carregando histórico…
+              </div>
+            ) : orders.length ? (
+              <>
+                <div className="order-history-list">
+                  {orders.map(({ order, customer }) => (
+                    <button
+                      className="order-history-row"
+                      key={order.id}
+                      onClick={() => setSelectedOrderId(order.id)}
+                    >
+                      <strong>#{order.orderNumber}</strong>
+                      <span>{customer.name}</span>
+                      <span>
+                        {new Date(order.createdAt).toLocaleString("pt-BR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </span>
+                      <span className={`order-history-status ${order.status}`}>
+                        {statusNames[order.status as Status]}
+                      </span>
+                      <strong>{formatBRL(order.totalCents)}</strong>
+                      <Eye size={16} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+                <div className="order-history-pagination">
+                  <button
+                    className="outline-button"
+                    disabled={historyPage === 0 || orderQuery.isFetching}
+                    onClick={() => setHistoryPage(page => Math.max(0, page - 1))}
+                  >
+                    <ArrowLeft size={15} /> Pedidos mais recentes
+                  </button>
+                  <span>Página {historyPage + 1}</span>
+                  <button
+                    className="outline-button"
+                    disabled={!historyHasMore || orderQuery.isFetching}
+                    onClick={() => setHistoryPage(page => page + 1)}
+                  >
+                    Pedidos mais antigos <ArrowRight size={15} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="admin-empty">
+                <Archive size={24} />
+                <h3>Nenhum pedido no histórico</h3>
+                <p>
+                  Pedidos entregues, cancelados ou recusados ficam disponíveis
+                  aqui após 10 minutos.
+                </p>
+              </div>
+            )
+          ) : (
           <div className="kanban-board">
             {stages.map(stage => (
-              <section className="kanban-column" key={stage.key}>
+              <section
+                className={`kanban-column ${dropTarget === stage.key ? "drop-target" : ""}`}
+                key={stage.key}
+                onDragEnter={event => {
+                  event.preventDefault();
+                  setDropTarget(stage.key);
+                }}
+                onDragOver={event => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDropTarget(stage.key);
+                }}
+                onDragLeave={event => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                    setDropTarget(current => current === stage.key ? null : current);
+                }}
+                onDrop={event => handleOrderDrop(event, stage.key)}
+              >
                 <div className={`kanban-title ${stage.color}`}>
                   <span>{stage.title}</span>
                   <b>{grouped[stage.key]?.length ?? 0}</b>
@@ -1862,9 +1995,30 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
                 <div className="kanban-stack">
                   {(grouped[stage.key] ?? []).map(
                     ({ order, customer, courier }) => (
-                      <article className="order-card" key={order.id}>
+                      <article
+                        className="order-card"
+                        key={order.id}
+                      >
                         <div className="order-card-head">
                           <b>#{order.orderNumber}</b>
+                          {stage.next && (
+                            <span
+                              className="order-drag-grip"
+                              title="Arraste para a próxima etapa"
+                              draggable={Boolean(stage.next)}
+                              onDragStart={event => {
+                                event.dataTransfer.setData("text/plain", String(order.id));
+                                event.dataTransfer.effectAllowed = "move";
+                                event.currentTarget.closest(".order-card")?.classList.add("is-dragging");
+                              }}
+                              onDragEnd={event => {
+                                event.currentTarget.closest(".order-card")?.classList.remove("is-dragging");
+                                setDropTarget(null);
+                              }}
+                            >
+                              <GripVertical size={14} aria-hidden="true" />
+                            </span>
+                          )}
                           <small>
                             {new Date(order.createdAt).toLocaleTimeString(
                               "pt-BR",
@@ -1985,6 +2139,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
               </section>
             ))}
           </div>
+          )}
         </section>
       )}
       {selectedOrderId !== null && (

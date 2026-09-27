@@ -1,6 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import {
   categories,
@@ -36,6 +47,10 @@ import {
   canEditCustomerOrder,
   recalculateEditedSubtotal,
 } from "./orderEditing.js";
+import {
+  COMPLETED_ORDER_STATUSES,
+  getOrderHistoryCutoff,
+} from "./retention.js";
 import { isSupportedBrazilPhone, normalizeBrazilPhone } from "../phone.js";
 import { publicProcedure, router } from "../_core/trpc.js";
 import { formatBRL, getEffectivePriceCents } from "../../shared/pricing.js";
@@ -437,9 +452,32 @@ export const ordersRouter = router({
       };
     }),
   adminList: staffProcedure
-    .input(z.object({ status: z.enum(statusValues).optional() }).optional())
+    .input(
+      z
+        .object({
+          status: z.enum(statusValues).optional(),
+          view: z.enum(["active", "history"]).default("active"),
+          page: z.number().int().min(0).max(100_000).default(0),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await requireDb();
+      const view = input?.view ?? "active";
+      const page = input?.page ?? 0;
+      const pageSize = view === "history" ? 40 : 100;
+      const cutoff = getOrderHistoryCutoff();
+      const finalizedAt = sql`COALESCE(${orders.deliveredAt}, ${orders.updatedAt})`;
+      const retentionFilter =
+        view === "history"
+          ? and(
+              inArray(orders.status, [...COMPLETED_ORDER_STATUSES]),
+              lt(finalizedAt, cutoff)
+            )
+          : or(
+              notInArray(orders.status, [...COMPLETED_ORDER_STATUSES]),
+              gte(finalizedAt, cutoff)
+            );
       const query = db
         .select({
           order: orders,
@@ -453,13 +491,18 @@ export const ordersRouter = router({
         .from(orders)
         .innerJoin(customers, eq(orders.customerId, customers.id))
         .leftJoin(deliveryCouriers, eq(orders.courierId, deliveryCouriers.id));
-      const rows = input?.status
-        ? await query
-            .where(eq(orders.status, input.status))
-            .orderBy(desc(orders.createdAt))
-            .limit(100)
-        : await query.orderBy(desc(orders.createdAt)).limit(100);
-      return rows;
+      const whereCondition = input?.status
+        ? and(retentionFilter, eq(orders.status, input.status))
+        : retentionFilter;
+      const rows = await query
+        .where(whereCondition)
+        .orderBy(desc(view === "history" ? orders.updatedAt : orders.createdAt))
+        .limit(pageSize + 1)
+        .offset(page * pageSize);
+      return {
+        items: rows.slice(0, pageSize),
+        hasMore: rows.length > pageSize,
+      };
     }),
   adminDetail: staffProcedure
     .input(z.object({ id: z.number().int().positive() }))

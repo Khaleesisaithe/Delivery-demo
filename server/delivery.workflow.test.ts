@@ -9,6 +9,11 @@ import {
   canDispatchDelivery,
   canTransitionOrder,
 } from "./delivery/workflow";
+import {
+  getOrderHistoryCutoff,
+  isCompletedOrderStatus,
+  shouldArchiveOrder,
+} from "./delivery/retention";
 
 describe("order lifecycle", () => {
   it("only permits forward operational transitions and cancellation before completion", () => {
@@ -32,6 +37,32 @@ describe("order lifecycle", () => {
     expect(canDispatchDelivery("delivery", false)).toBe(false);
     expect(canDispatchDelivery("delivery", true)).toBe(true);
     expect(canDispatchDelivery("pickup", false)).toBe(true);
+  });
+});
+
+describe("completed-order history retention", () => {
+  const now = new Date("2026-09-27T12:00:00.000Z");
+
+  it("uses an exact ten-minute cutoff", () => {
+    expect(getOrderHistoryCutoff(now).toISOString()).toBe(
+      "2026-09-27T11:50:00.000Z"
+    );
+  });
+
+  it("archives terminal orders only after the cutoff", () => {
+    expect(isCompletedOrderStatus("delivered")).toBe(true);
+    expect(isCompletedOrderStatus("cancelled")).toBe(true);
+    expect(isCompletedOrderStatus("rejected")).toBe(true);
+    expect(isCompletedOrderStatus("preparing")).toBe(false);
+    expect(
+      shouldArchiveOrder("delivered", new Date("2026-09-27T11:49:59.999Z"), now)
+    ).toBe(true);
+    expect(
+      shouldArchiveOrder("delivered", new Date("2026-09-27T11:50:00.000Z"), now)
+    ).toBe(false);
+    expect(
+      shouldArchiveOrder("preparing", new Date("2026-09-27T11:00:00.000Z"), now)
+    ).toBe(false);
   });
 });
 

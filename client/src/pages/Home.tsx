@@ -8,7 +8,6 @@ import {
   Flame,
   House,
   MapPin,
-  Menu as MenuIcon,
   Minus,
   Plus,
   Search,
@@ -257,6 +256,7 @@ export default function Home() {
   const storePaused = Boolean(
     store?.pauseUntil && new Date(store.pauseUntil).getTime() > Date.now()
   );
+  const storeAcceptingOrders = storeOpen && !storePaused;
 
   function openProduct(productId: number) {
     setSelectedProduct(productId);
@@ -307,7 +307,7 @@ export default function Home() {
     );
   }
   function beginCheckout() {
-    if (!storeOpen) {
+    if (!storeAcceptingOrders) {
       toast.error(
         storePaused
           ? "A loja está em pausa por até uma hora. Tente novamente em instantes."
@@ -328,6 +328,15 @@ export default function Home() {
   }
   function submitOrder(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!storeAcceptingOrders) {
+      toast.error(
+        storePaused
+          ? "A loja está em pausa por até uma hora. Tente novamente em instantes."
+          : store?.closedMessage || "A loja está fechada no momento."
+      );
+      setCheckoutOpen(false);
+      return;
+    }
     if (customerName.trim().split(/\s+/).filter(Boolean).length < 2) {
       toast.error("Informe seu nome e sobrenome.");
       return;
@@ -416,17 +425,6 @@ export default function Home() {
       style={{ "--bp-fire": store.brandColor } as CSSProperties}
     >
       <header className="app-topbar">
-        <button
-          className="header-icon-button menu-trigger"
-          onClick={() =>
-            document
-              .getElementById("cardapio")
-              ?.scrollIntoView({ behavior: "smooth" })
-          }
-          aria-label="Ir para o cardápio"
-        >
-          <MenuIcon size={21} />
-        </button>
         <a className="app-brand" href="/" aria-label={`${store.name}, início`}>
           <span className="brand-mark">
             {store.logoUrl ? (
@@ -441,7 +439,7 @@ export default function Home() {
           </span>
         </a>
         <div
-          className={`open-pill app-open-pill ${storeOpen ? "is-open" : "is-closed"}`}
+          className={`open-pill app-open-pill ${storeAcceptingOrders ? "is-open" : "is-closed"}`}
         >
           <i />
           {storePaused ? "Em pausa" : storeOpen ? "Aberto" : "Fechado"}
@@ -516,6 +514,25 @@ export default function Home() {
         )}
       </div>
 
+      {!storeAcceptingOrders && (
+        <aside
+          className={`store-availability-alert ${storePaused ? "is-paused" : "is-closed"}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="store-availability-icon"><Clock3 size={21} /></span>
+          <span className="store-availability-copy">
+            <strong>{storePaused ? "Pedidos pausados por enquanto" : "A loja está fechada agora"}</strong>
+            <span>
+              {storePaused
+                ? "Você pode conferir o cardápio. Voltaremos a aceitar pedidos em breve."
+                : store?.closedMessage || "Confira o cardápio e volte quando estivermos abertos para fazer seu pedido."}
+            </span>
+          </span>
+          <span className="store-availability-badge">{storePaused ? "PAUSA TEMPORÁRIA" : "NO MOMENTO"}</span>
+        </aside>
+      )}
+
       <main>
         <section className="hero-wrap app-hero">
           <div className="hero-art">
@@ -534,7 +551,7 @@ export default function Home() {
             </h1>
             <p>{store.tagline}</p>
             <a href="#cardapio" className="hero-cta">
-              Pedir agora{" "}
+              {storeAcceptingOrders ? "Pedir agora" : "Ver cardápio"}{" "}
               <span className="round-arrow">
                 <ArrowRight size={16} />
               </span>
