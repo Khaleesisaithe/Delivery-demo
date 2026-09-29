@@ -46,15 +46,15 @@ export default function StoreAccess() {
   return <main className="store-access-page">
     <section className="store-access-shell">
       <header className="store-access-header">
-        <span className="store-access-brand"><span className="store-access-mark"><Store size={22} /></span><span><b>Portal da equipe</b><small>Operação da loja</small></span></span>
+        <span className="store-access-brand"><span className="store-access-mark"><Store size={22} /></span><span><b>Área da equipe</b><small>Pedidos e rotina da casa</small></span></span>
         <span className="store-access-secure"><ShieldCheck size={15} /> Acesso protegido</span>
       </header>
 
       <div className="store-access-grid">
         <section className="store-access-card">
           <span className="store-access-eyebrow"><span /> ÁREA PRIVADA · SOMENTE CONVIDADOS</span>
-          <h1>Bom ter você<br /><em>por aqui.</em></h1>
-          <p className="store-access-intro">Entre com o e-mail e a senha que o proprietário da loja criou para você.</p>
+          <h1>Seu acesso<br /><em>começa aqui.</em></h1>
+          <p className="store-access-intro">Use o e-mail e a senha que o proprietário criou para o seu trabalho.</p>
 
           <form onSubmit={event => { event.preventDefault(); login.mutate({ email, password }); }}>
             <label htmlFor="team-email">E-mail de acesso</label>
@@ -87,8 +87,8 @@ export default function StoreAccess() {
         <aside className="store-access-side" aria-label="Informações de segurança">
           <span className="store-access-side-icon"><KeyRound size={24} /></span>
           <span className="store-access-side-kicker">SEU TRABALHO, SEU PERFIL</span>
-          <h2>Um espaço de trabalho feito para a equipe.</h2>
-          <p>Entre para acompanhar pedidos e ajudar a operação. Recursos do proprietário, como cardápio e financeiro, ficam restritos ao perfil autorizado.</p>
+          <h2>Tudo o que você precisa para tocar a operação.</h2>
+          <p>Acompanhe pedidos, atualize etapas e ajude a casa a funcionar bem. Recursos do proprietário, como cardápio e financeiro, ficam restritos ao perfil autorizado.</p>
           <div className="store-access-side-list"><span><LockKeyhole size={15} /> Login individual e sem cadastro público</span><span><ShieldCheck size={15} /> Permissões verificadas no servidor</span><span><UsersRound size={15} /> Acesso criado e revogado pelo dono</span></div>
           <div className="store-access-side-bottom">Sua segurança começa com uma senha forte e exclusiva.</div>
         </aside>

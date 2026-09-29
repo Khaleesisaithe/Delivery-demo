@@ -547,7 +547,7 @@ export default function Home() {
             <h1>
               Feito na brasa.
               <br />
-              <em>Chega quentinho.</em>
+              <em>Chega do jeito certo.</em>
             </h1>
             <p>{store.tagline}</p>
             <a href="#cardapio" className="hero-cta">
@@ -636,7 +636,7 @@ export default function Home() {
           <div className="app-section-heading">
             <div>
               <h2>Mais pedidos</h2>
-              <p>Os favoritos da casa</p>
+              <p>O que a casa mais prepara</p>
             </div>
             <button
               className="view-all"
@@ -731,9 +731,9 @@ export default function Home() {
           <div>
             <span>FEITO NA BRASA</span>
             <h2>
-              Seu próximo favorito
+              Tem sempre um pedido
               <br />
-              está no cardápio.
+              esperando por você.
             </h2>
             <button
               onClick={() => {
@@ -746,7 +746,7 @@ export default function Home() {
                   ?.scrollIntoView({ behavior: "smooth" });
               }}
             >
-              Descobrir sabores <ArrowRight size={15} />
+              Ver o cardápio <ArrowRight size={15} />
             </button>
           </div>
           <span className="offer-art">
@@ -765,8 +765,8 @@ export default function Home() {
             <div className="app-section-heading">
               <div>
                 <span className="promo-kicker">OFERTA POR TEMPO LIMITADO</span>
-                <h2>Promoções de hoje</h2>
-                <p>Preços especiais enquanto durar o estoque.</p>
+                <h2>Ofertas que valem a pena hoje</h2>
+                <p>Os preços ficam assim enquanto houver disponibilidade.</p>
               </div>
             </div>
             <div className="popular-grid">
@@ -909,8 +909,8 @@ export default function Home() {
           {!filteredProducts.length && (
             <div className="empty-results">
               <span>🍽️</span>
-              <h3>Não achamos esse sabor.</h3>
-              <p>Tente outro nome ou escolha uma categoria.</p>
+              <h3>Ainda não encontramos esse item.</h3>
+              <p>Tente outra busca ou escolha uma categoria para continuar.</p>
               <button
                 onClick={() => {
                   setSearch("");
@@ -1026,8 +1026,8 @@ export default function Home() {
             {!cart.length ? (
               <div className="empty-cart">
                 <ShoppingBag size={35} />
-                <h3>Sua sacola está vazia</h3>
-                <p>Escolha alguma delícia do cardápio.</p>
+                <h3>Sua sacola está esperando</h3>
+                <p>Escolha um item do cardápio e ele aparece aqui.</p>
                 <button onClick={() => setCartOpen(false)}>
                   Voltar ao cardápio
                 </button>
@@ -1244,7 +1244,7 @@ export default function Home() {
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">SÓ MAIS UM PASSO</span>
-                <h2>Finalizar pedido</h2>
+                <h2>Conferir e enviar pedido</h2>
               </div>
               <button
                 className="icon-close"
@@ -1556,7 +1556,7 @@ export default function Home() {
               <Check size={31} />
             </span>
             <span className="eyebrow">PEDIDO REGISTRADO</span>
-            <h2>Agora é com a gente.</h2>
+            <h2>Pedido recebido.</h2>
             <p>
               Seu pedido <b>{createdOrder.orderNumber}</b> já está registrado.
               Envie a mensagem à loja para confirmar os detalhes.

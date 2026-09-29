@@ -25,8 +25,8 @@ export default function ChangePassword() {
   return <main className="store-access-page"><section className="store-access-card">
     <span className="store-access-mark"><ShieldCheck size={25} /></span>
     <span className="eyebrow">PROTEÇÃO DA CONTA</span>
-    <h1>Crie sua senha pessoal</h1>
-    <p>Por segurança, a senha temporária precisa ser substituída antes de usar a área da loja.</p>
+    <h1>Escolha sua senha pessoal</h1>
+    <p>Troque a senha temporária agora. Depois disso, você já pode entrar na área da loja.</p>
     <form onSubmit={event => {
       event.preventDefault();
       if (newPassword !== confirmation) return toast.error("As senhas novas não conferem.");
@@ -36,7 +36,7 @@ export default function ChangePassword() {
       <label>Senha temporária ou atual<input type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} /></label>
       <label>Nova senha<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={newPassword} onChange={event => setNewPassword(event.target.value)} /></label>
       <label>Confirme a nova senha<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label>
-      <button className="primary-button" disabled={change.isPending}><KeyRound size={17} /> {change.isPending ? "Salvando…" : "Salvar nova senha"}</button>
+      <button className="primary-button" disabled={change.isPending}><KeyRound size={17} /> {change.isPending ? "Salvando…" : "Salvar e continuar"}</button>
     </form>
   </section></main>;
 }

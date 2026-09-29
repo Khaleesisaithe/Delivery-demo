@@ -443,8 +443,8 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
       : isStore
         ? "Sua loja"
         : isTeam
-          ? "Sua equipe"
-          : "Central de pedidos";
+          ? "Quem está na operação"
+          : "Pedidos de hoje";
   const grouped = useMemo(
     () =>
       Object.fromEntries(
@@ -689,7 +689,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
     <div className="admin-shell">
       <div className="admin-topline">
         <div>
-          <span className="eyebrow">PAINEL PRIVADO DA LOJA</span>
+          <span className="eyebrow">CENTRAL DE OPERAÇÃO</span>
           <h1>{sectionTitle}</h1>
         </div>
         <div className="admin-toolbar">
@@ -738,7 +738,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
             </div>
           )}
           <div className="admin-live">
-            <i /> Atualiza automaticamente{" "}
+            <i /> Atualiza sozinho{" "}
             <Link href="/" target="_blank">
               Ver loja <ArrowRight size={13} />
             </Link>
@@ -750,7 +750,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
           <div className="admin-section-heading">
             <div>
               <span className="eyebrow">VISÃO DO PROPRIETÁRIO</span>
-              <h2>Vendas brutas concluídas</h2>
+              <h2>Como foram as vendas</h2>
               <p>
                 Considera pedidos marcados como entregues no fuso horário
                 configurado para a loja. Não é cálculo de lucro.
@@ -847,8 +847,8 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
           <div className="admin-section-heading">
             <div>
               <span className="eyebrow">CATÁLOGO</span>
-              <h2>Produtos e categorias</h2>
-              <p>Atualize o que aparece no cardápio em tempo real.</p>
+              <h2>O que aparece no cardápio</h2>
+              <p>Faça uma mudança aqui e ela aparece no cardápio da loja.</p>
             </div>
             <button
               className="primary-button"
@@ -1307,7 +1307,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
               <Store size={25} />
             </span>
             <span className="eyebrow">OPERAÇÃO DA LOJA</span>
-            <h2>Controle o funcionamento da casa.</h2>
+            <h2>Deixe o horário da casa claro.</h2>
             <p>
               A marca, o nome, o logotipo, o banner e as cores são definidos na
               implantação. Aqui ficam apenas as condições operacionais.
@@ -1565,7 +1565,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
           <div className="admin-section-heading">
             <div>
               <span className="eyebrow">PERMISSÕES</span>
-              <h2>Sua equipe</h2>
+              <h2>Quem está na operação</h2>
               <p>
                 O proprietário gerencia acessos e entregadores. Funcionários não
                 editam pedidos: eles acompanham a operação e atribuem pedidos
@@ -1871,7 +1871,7 @@ function AdminWorkspace({ isOwner }: { isOwner: boolean }) {
               <span className="eyebrow">
                 {ordersView === "active" ? "ACOMPANHAMENTO AO VIVO" : "CONSULTA DE PEDIDOS"}
               </span>
-              <h2>{ordersView === "active" ? "Pedidos da loja" : "Histórico de pedidos"}</h2>
+              <h2>{ordersView === "active" ? "Pedidos em andamento" : "Pedidos anteriores"}</h2>
             </div>
             <div className="toolbar-actions">
               <div className="orders-view-tabs" aria-label="Visualização dos pedidos">
